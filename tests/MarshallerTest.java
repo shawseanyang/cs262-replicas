@@ -1,6 +1,7 @@
 package tests;
 
 import java.lang.Exception;
+import java.util.Arrays;
 import protocol.*;
 
 public class MarshallerTest {
@@ -16,13 +17,15 @@ public class MarshallerTest {
 
   public static void testMarshall() throws Exception {
     byte version = 23;
-    byte messageLength = 100;
     Operation operation = Operation.SEND_MESSAGE;
     protocol.Exception exception = protocol.Exception.NONE;
-    byte[] content = new byte[1];
-    content[0] = 1;
 
-    Message message = new Message(version, messageLength, operation, exception, content);
+    // define the content, convert it to bytes, then grab the length
+    String contentString = "hello world";
+    byte[] contentBytes = contentString.getBytes();
+    byte messageLength = (byte) (contentBytes.length + Constants.CONTENT_POSITION);
+
+    Message message = new Message(version, messageLength, operation, exception, contentBytes);
     byte[] marshalledMessage = Marshaller.marshall(message);
 
     Message unmarshalledMessage = Marshaller.unmarshall(marshalledMessage);
@@ -31,6 +34,9 @@ public class MarshallerTest {
     assert message.getMessageLength() == unmarshalledMessage.getMessageLength();
     assert message.getOperation() == unmarshalledMessage.getOperation();
     assert message.getException() == unmarshalledMessage.getException();
-    assert message.getContent() == unmarshalledMessage.getContent();
+    assert Arrays.equals(
+      message.getContent(),
+      unmarshalledMessage.getContent()
+    );
   }
 }
