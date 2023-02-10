@@ -3,11 +3,11 @@ package protocol;
 public class Message {
     private byte version;
     private byte messageLength;
-    private byte operation;
-    private byte exception;
+    private Operation operation;
+    private Exception exception;
     private byte[] content;
 
-    public Message(byte version, byte characterLength, byte operation, byte exception, byte[] content) {
+    public Message(byte version, byte characterLength, Operation operation, Exception exception, byte[] content) {
         this.version = version;
         this.messageLength = characterLength;
         this.operation = operation;
@@ -21,10 +21,10 @@ public class Message {
     public byte getMessageLength() {
         return messageLength;
     }
-    public byte getOperation() {
+    public Operation getOperation() {
         return operation;
     }
-    public byte getException() {
+    public Exception getException() {
         return exception;
     }
     public byte[] getContent() {
