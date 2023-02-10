@@ -13,11 +13,11 @@ public class Marshaller {
 
     public static Message unmarshall(byte[] marshalledMessage) {
         byte version = marshalledMessage[0];
-        byte characterLength = marshalledMessage[1];
+        byte messageLength = marshalledMessage[1];
         Operation operation = Operation.fromByte(marshalledMessage[2]);
         Exception exception = Exception.fromByte(marshalledMessage[3]);
-        byte[] content = new byte[characterLength - 4];
+        byte[] content = new byte[messageLength - 4];
         System.arraycopy(marshalledMessage, 4, content, 0, content.length);
-        return new Message(version, characterLength, operation, exception, content);
+        return new Message(version, messageLength, operation, exception, content);
     }
 }
