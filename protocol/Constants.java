@@ -1,7 +1,7 @@
 package protocol;
 
 public class Constants {
-    final static int PORT = 8080;
-    final static byte ARGUMENT_SEPARATOR = 9;
-    final static byte MESSAGE_SEPARATOR = 10;
+    public final static int PORT = 8080;
+    public final static byte ARGUMENT_SEPARATOR = 9;
+    public final static byte MESSAGE_SEPARATOR = 10;
 }

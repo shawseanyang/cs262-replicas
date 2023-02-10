@@ -1,6 +1,7 @@
 package server;
 
 import java.nio.ByteBuffer;
+import protocol.Operation;
 import java.util.Arrays;
 import java.util.UUID;
 
@@ -17,19 +18,17 @@ public class ServerHandler implements Runnable {
     }
 
     // Delegates the message to the correct handler
-    public static void run() {
-        byte operation = message.getOperation();
+    public void run() {
+        Operation operation = message.getOperation();
+        byte[] content = message.getContent();
         switch (operation) {
-            case 0:
-                byte[] content = message.getContent();
+            case CREATE_ACCOUNT:
                 createAccountHandler(content);
                 break;
-            case 1:
-                byte[] content = message.getContent();
+            case LOG_IN:
                 loginHandler(content);
                 break;
-            case 2:
-                byte[] content = message.getContent();
+            case SEND_MESSAGE:
                 byte[][] splitContent = splitByteArray(content, Constants.ARGUMENT_SEPARATOR);
                 byte[] recipient = splitContent[0];
                 UUID messageID = asUuid(splitContent[1]);
