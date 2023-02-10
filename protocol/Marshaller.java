@@ -2,9 +2,9 @@ package protocol;
 
 public class Marshaller {
     public static byte[] marshall(Message message) {
-        byte[] marshalledMessage = new byte[message.getCharacterLength()];
+        byte[] marshalledMessage = new byte[message.getMessageLength()];
         marshalledMessage[0] = message.getVersion();
-        marshalledMessage[1] = message.getCharacterLength();
+        marshalledMessage[1] = message.getMessageLength();
         marshalledMessage[2] = message.getOperation();
         marshalledMessage[3] = message.getException();
         System.arraycopy(message.getContent(), 0, marshalledMessage, 4, message.getContent().length);
