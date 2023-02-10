@@ -12,7 +12,7 @@ public class Marshaller {
     }
 
     public static Message unmarshall(byte[] marshalledMessage) {
-        byte version = 3;
+        byte version = marshalledMessage[0];
         byte characterLength = marshalledMessage[1];
         Operation operation = Operation.fromByte(marshalledMessage[2]);
         Exception exception = Exception.fromByte(marshalledMessage[3]);
