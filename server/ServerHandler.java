@@ -1,10 +1,14 @@
 package server;
 
+import java.io.IOException;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import protocol.Operation;
 import java.util.Arrays;
 import java.util.UUID;
 
+import java.lang.Exception;
+import protocol.*;
 import protocol.Constants;
 import protocol.Message;
 
@@ -12,9 +16,13 @@ public class ServerHandler implements Runnable {
 
     // Necessary to define run parameters for a thread
     private Message message;
+    private Socket socket;
+    
+    private User user;
 
-    public ServerHandler(Message message) {
+    public ServerHandler(Message message, Socket socket) {
         this.message = message;
+        this.socket = socket;
     }
 
     // Delegates the message to the correct handler
@@ -69,15 +77,33 @@ public class ServerHandler implements Runnable {
     }
 
     // Sender-related functions
-    private static void createAccountHandler(byte[] username) {
+    private void createAccountHandler(byte[] username) {
         
     }
 
-    private static void loginHandler(byte[] username) {
+    private void loginHandler(byte[] username) {
+        user = new User(username);
+        if (Server.clients.containsKey(user)) {
+            // If client has already logged in, close the old socket
+            Socket oldSocket = Server.clients.get(user);
+            if (oldSocket != null) {
+                try {
+                    oldSocket.close();
+                } catch (IOException e) {
+                    System.err.println("ERROR: Could not close the socket.");
+                    e.printStackTrace();
+                }
+            }
+            
+            // Update the socket
+            Server.clients.put(user, socket);
 
+            // Send a success message
+            Message successMessage = new Message(Constants.CURRENT_VERSION, Constants.CONTENT_POSITION, Operation.LOG_IN_RESPONSE, protocol.Exception.NONE, new byte[0]);
+        }
     }
 
-    private static void sendMessageHandler(byte[] recipient, UUID messageID, byte[] message) {
+    private void sendMessageHandler(byte[] recipient, UUID messageID, byte[] message) {
 
     }
 

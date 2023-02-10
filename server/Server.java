@@ -10,8 +10,12 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
 
 public class Server {
+
+    // Inactive users should have a socket value of null
+    static HashMap<User, Socket> clients = new HashMap<User, Socket>();
     public static void main(String[] args) {
         System.out.println("Server is running...");
 
@@ -48,7 +52,7 @@ public class Server {
                 Message unmarshalledMessage = Marshaller.unmarshall(message);
 
                 // Create a new thread to handle the message
-                new Thread(new ServerHandler(unmarshalledMessage)).start();
+                new Thread(new ServerHandler(unmarshalledMessage, s)).start();
             } catch (IOException e) {
                 System.err.println("ERROR: Could not read the message.");
                 e.printStackTrace();
