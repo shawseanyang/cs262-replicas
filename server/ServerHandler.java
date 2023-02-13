@@ -214,7 +214,7 @@ public class ServerHandler implements Runnable {
         // Check if user is logged in
         if (!isLoggedIn()) {
             // Send an error message
-            Message errorMessage = new Message(Constants.CURRENT_VERSION, (byte) Constants.CONTENT_POSITION, Operation.SEND_MESSAGE_RESPONSE, protocol.Exception.USER_NOT_LOGGED_IN, new byte[0]);
+            Message errorMessage = new Message(Constants.CURRENT_VERSION, (byte) Constants.CONTENT_POSITION, Operation.SEND_MESSAGE_RESPONSE, protocol.Exception.NOT_LOGGED_IN, new byte[0]);
             try {
                 out.write(Marshaller.marshall(errorMessage));
             } catch (IOException e) {
