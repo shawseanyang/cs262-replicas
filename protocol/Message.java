@@ -1,29 +1,22 @@
 package protocol;
 
+import java.util.ArrayList;
+
 public class Message {
     private byte version;
-    private byte messageLength;
     private Operation operation;
     private Exception exception;
-    private byte[] content;
+    private ArrayList<byte[]> arguments;
 
-    public Message(byte version, byte messageLength, Operation operation, Exception exception, byte[] content) throws IllegalArgumentException {
+    public Message(byte version, Operation operation, Exception exception, ArrayList<byte[]> arguments) throws IllegalArgumentException {
         this.version = version;
-        this.messageLength = messageLength;
         this.operation = operation;
         this.exception = exception;
-        this.content = content;
-
-        if (content.length != messageLength - Constants.CONTENT_POSITION) {
-            throw new IllegalArgumentException("Content length does not match message length");
-        }
+        this.arguments = arguments;
     }
 
     public byte getVersion() {
         return version;
-    }
-    public byte getMessageLength() {
-        return messageLength;
     }
     public Operation getOperation() {
         return operation;
@@ -31,7 +24,7 @@ public class Message {
     public Exception getException() {
         return exception;
     }
-    public byte[] getContent() {
-        return content;
+    public ArrayList<byte[]> getArguments() {
+        return arguments;
     }
 }
