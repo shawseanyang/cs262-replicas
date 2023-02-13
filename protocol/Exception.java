@@ -6,7 +6,8 @@ public enum Exception {
   NONE, // No exception
   USER_ALREADY_EXISTS,
   USER_DOES_NOT_EXIST,
-  NOT_LOGGED_IN;
+  NOT_LOGGED_IN,
+  INVALID_USERNAME;
 
   public static Exception fromByte(byte b) {
     switch (b) {
@@ -18,6 +19,8 @@ public enum Exception {
         return USER_DOES_NOT_EXIST;
       case 3:
         return NOT_LOGGED_IN;
+      case 4:
+        return INVALID_USERNAME;
       default:
         return null;
     }
@@ -33,6 +36,8 @@ public enum Exception {
         return 2;
       case NOT_LOGGED_IN:
         return 3;
+      case INVALID_USERNAME:
+        return 4;
       default:
         return -1;
     }
