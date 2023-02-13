@@ -1,6 +1,7 @@
 package utility;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.UUID;
 
@@ -11,6 +12,14 @@ public class ByteConverter {
 
   public static byte[] stringToByteArray(String string) {
     return string.getBytes();
+  }
+
+  public static byte[] ByteArrayListToByteArray(ArrayList<Byte> bytes) {
+    byte[] result = new byte[bytes.size()];
+    for (int i = 0; i < bytes.size(); i++) {
+      result[i] = bytes.get(i);
+    }
+    return result;
   }
 
   public static byte[][] splitByteArray(byte[] array, byte separator) {

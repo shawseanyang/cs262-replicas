@@ -16,23 +16,18 @@ public class CommandParser {
     String command = in.nextLine();
     String[] commandParts = command.split(" ");
     byte version = Constants.CURRENT_VERSION;
-    protocol.Operation operation = parseCommandToOperation(commandParts[1]);
+    protocol.Operation operation = parseCommandToOperation(commandParts[0]);
     protocol.Exception exception = protocol.Exception.NONE;
 
-    // the content is the rest of the command string after the operation
-    byte[] content = ByteConverter.stringToByteArray(
-      command.substring(commandParts[1].length() + 1)
-      + (
-        // if the operation is SEND_MESSAGE
-        operation == protocol.Operation.SEND_MESSAGE
-        // then append a UUID as the messageID
-        ? Constants.ARGUMENT_SEPARATOR + java.util.UUID.randomUUID().toString()
-        : ""
-      )
-    );
-
     ArrayList<byte[]> args = new ArrayList<byte[]>();
-    args.add(content);
+    for (int i = 1; i < commandParts.length; i++) {
+      args.add(ByteConverter.stringToByteArray(commandParts[i]));
+    }
+
+    // if the operation is SEND_MESSAGE then append a UUID as the messageID
+    if (operation == protocol.Operation.SEND_MESSAGE) {
+      args.add(ByteConverter.UUIDToByteArray(java.util.UUID.randomUUID()));
+    }
 
     // create a new message
     Message message = new Message(version, operation, exception, args);

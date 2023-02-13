@@ -10,8 +10,7 @@ public class Constants {
 
     // starting positions for each part of the message
     public final static int VERSION_POSITION = 0;
-    public final static int MESSAGE_LENGTH_POSITION = 1;
-    public final static int OPERATION_POSITION = 2;
-    public final static int EXCEPTION_POSITION = 3;
-    public final static int CONTENT_POSITION = 4;
+    public final static int OPERATION_POSITION = 1;
+    public final static int EXCEPTION_POSITION = 2;
+    public final static int CONTENT_POSITION = 3;
 }
