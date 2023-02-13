@@ -41,23 +41,22 @@ public class ServerHandler implements Runnable {
         }
         
         Operation operation = message.getOperation();
-        byte[] content = message.getContent();
+        ArrayList<byte[]> args = message.getArguments();
         switch (operation) {
             case CREATE_ACCOUNT:
-                createAccountHandler(content);
+                createAccountHandler(args.get(0));
                 break;
             case LOG_IN:
-                loginHandler(content);
+                loginHandler(args.get(0));
                 break;
             case SEND_MESSAGE:
-                byte[][] splitContent = ByteConverter.splitByteArray(content, Constants.ARGUMENT_SEPARATOR);
-                byte[] recipient = splitContent[0];
-                byte[] message = splitContent[1];
-                UUID messageID = ByteConverter.byteArrayToUUID(splitContent[2]);
+                byte[] recipient = args.get(0);
+                byte[] message = args.get(1);
+                UUID messageID = ByteConverter.byteArrayToUUID(args.get(2));
                 sendMessageHandler(recipient, message, messageID);
                 break;
             case LIST_ACCOUNTS:
-                listAccountsHandler(content);
+                listAccountsHandler(args.get(0));
                 break;
         }
     }
@@ -157,8 +156,7 @@ public class ServerHandler implements Runnable {
     // Utility function for validating the message
     private protocol.Exception validateMessage() {
         Operation operation = message.getOperation();
-        byte[] content = message.getContent();
-        byte[][] splitContent = ByteConverter.splitByteArray(content, Constants.ARGUMENT_SEPARATOR);
+        ArrayList<byte[]> args = message.getArguments();
 
         // Check if the message is valid according to the wire protocol
         protocol.Exception resultingException = MessageValidator.validateMessage(message);
@@ -170,13 +168,13 @@ public class ServerHandler implements Runnable {
             case CREATE_ACCOUNT:
             case LOG_IN:
                 // Check if the username is valid (not empty)
-                if (content.length == 0) {
+                if (args.get(0).length == 0) {
                     return protocol.Exception.INVALID_USERNAME;
                 }
                 break;
             case SEND_MESSAGE:
                 // Check if recipient exists
-                if (!Server.clients.containsKey(new User(splitContent[0]))) {
+                if (!Server.clients.containsKey(new User(args.get(0)))) {
                     return protocol.Exception.USER_DOES_NOT_EXIST;
                 }
                 break;

@@ -1,5 +1,6 @@
 package client;
 
+import java.util.ArrayList;
 import java.util.Scanner;
 
 import protocol.Constants;
@@ -30,10 +31,11 @@ public class CommandParser {
       )
     );
 
-    byte messageLength = (byte) (Constants.CONTENT_POSITION + content.length);
+    ArrayList<byte[]> args = new ArrayList<byte[]>();
+    args.add(content);
 
     // create a new message
-    Message message = new Message(version, messageLength, operation, exception, content);
+    Message message = new Message(version, operation, exception, args);
     
     // validate that the right number of arguments were provided
     if (MessageValidator.validateMessage(message) != protocol.Exception.NONE) {
