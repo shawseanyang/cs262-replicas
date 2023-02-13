@@ -152,19 +152,6 @@ public class ServerHandler implements Runnable {
 
         // TODO: Send the list of users as a success message
 
-
-
-
-        
-
-        Message responseMessage = new Message(Constants.CURRENT_VERSION, (byte) Constants.CONTENT_POSITION, message.getOperation(), protocol.Exception.NONE, other.getUsername());
-        try {
-            out.write(Marshaller.marshall(responseMessage));
-        } catch (IOException e) {
-            System.err.println("ERROR: Could not send the success message.");
-            e.printStackTrace();
-        }
-
         // Send a success message
         sendResponseMessage(protocol.Exception.NONE);
     }

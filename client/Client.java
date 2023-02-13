@@ -1,7 +1,5 @@
 package client;
 
-import static client.ClientHandler.*;
-
 import java.util.Scanner;
 
 import protocol.Constants;
@@ -20,8 +18,7 @@ public class Client {
         continue;
       }
 
-      // Handle the message, usually by sending it to the server, waiting for an acknowledgement, and retrying with exponential backoff. Behavior depends on the type of message.
-      ClientHandler.handle(message);
+      // TODO: Handle message
     }
   }
 }
