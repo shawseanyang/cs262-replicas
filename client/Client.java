@@ -20,8 +20,8 @@ public class Client {
         continue;
       }
 
-      // create a new thread to handle the command
-      new Thread(new ClientHandler(message)).start();
+      // Handle the message, usually by sending it to the server, waiting for an acknowledgement, and retrying with exponential backoff. Behavior depends on the type of message.
+      ClientHandler.handle(message);
     }
   }
 }
