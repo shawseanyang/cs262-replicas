@@ -18,9 +18,8 @@ public class MessageValidator {
 
   // returns protocol.Exception.NONE if the message is valid and a INVALID_ARGUMENT_COUNT otherwise
   public static protocol.Exception validateMessage(Message message) {
-    byte[][] splitContent = ByteConverter.splitByteArray(message.getContent(), Constants.ARGUMENT_SEPARATOR);
     int argCount = ARG_COUNT.get(message.getOperation());
-    if (splitContent.length != argCount) {
+    if (message.getArguments().size() != argCount) {
       return protocol.Exception.INVALID_ARGUMENTS;
     }
     return protocol.Exception.NONE;
