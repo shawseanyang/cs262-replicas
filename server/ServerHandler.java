@@ -4,7 +4,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
-import protocol.Operation;
 import java.util.Arrays;
 import java.util.UUID;
 
@@ -12,6 +11,9 @@ import java.lang.Exception;
 import protocol.*;
 import protocol.Constants;
 import protocol.Message;
+import protocol.Operation;
+
+import utility.ByteConverter;
 
 public class ServerHandler implements Runnable {
 
@@ -31,8 +33,18 @@ public class ServerHandler implements Runnable {
     // Delegates the message to the correct handler
     public void run() {
         // Validate the message
-        if (!messageValidator())
+        protocol.Exception resultingException = validateMessage();
+        if (resultingException != protocol.Exception.NONE) {
+            // Send an error message
+            Message errorMessage = new Message(Constants.CURRENT_VERSION, (byte) Constants.CONTENT_POSITION, message.getOperation(), resultingException, new byte[0]);
+            try {
+                out.write(Marshaller.marshall(errorMessage));
+            } catch (IOException e) {
+                System.err.println("ERROR: Could not send the error message.");
+                e.printStackTrace();
+            }
             return;
+        }
         
         Operation operation = message.getOperation();
         byte[] content = message.getContent();
@@ -44,97 +56,45 @@ public class ServerHandler implements Runnable {
                 loginHandler(content);
                 break;
             case SEND_MESSAGE:
-                byte[][] splitContent = splitByteArray(content, Constants.ARGUMENT_SEPARATOR);
+                byte[][] splitContent = ByteConverter.splitByteArray(content, Constants.ARGUMENT_SEPARATOR);
                 byte[] recipient = splitContent[0];
-                UUID messageID = asUuid(splitContent[1]);
+                UUID messageID = ByteConverter.byteArrayToUUID(splitContent[1]);
                 byte[] message = splitContent[2];
                 sendMessageHandler(recipient, messageID, message);
+                break;
+            case LIST_ACCOUNTS:
+                listAccountsHandler(content);
                 break;
         }
     }
 
-    private boolean messageValidator() {
+    private protocol.Exception validateMessage() {
         Operation operation = message.getOperation();
         byte[] content = message.getContent();
+        byte[][] splitContent = ByteConverter.splitByteArray(content, Constants.ARGUMENT_SEPARATOR);
+
+        // Check if the message is valid according to the wire protocol
+        protocol.Exception resultingException = MessageValidator.validateMessage(message);
+        if (resultingException != protocol.Exception.NONE) {
+            return resultingException;
+        }
+
         switch (operation) {
             case CREATE_ACCOUNT:
             case LOG_IN:
                 // Check if the username is valid (not empty)
                 if (content.length == 0) {
-                    // Send an error message
-                    Message errorMessage = new Message(Constants.CURRENT_VERSION, (byte) Constants.CONTENT_POSITION, Operation.CREATE_ACCOUNT_RESPONSE, protocol.Exception.INVALID_USERNAME, new byte[0]);
-                    try {
-                        out.write(Marshaller.marshall(errorMessage));
-                    } catch (IOException e) {
-                        System.err.println("ERROR: Could not send the error message.");
-                        e.printStackTrace();
-                    }
-                    return false;
+                    return protocol.Exception.INVALID_USERNAME;
                 }
                 break;
             case SEND_MESSAGE:
-                byte[][] splitContent = splitByteArray(content, Constants.ARGUMENT_SEPARATOR);
-
-                // Check if there are 3 arguments
-                if (splitContent.length != 3) {
-                    // Send an error message
-                    Message errorMessage = new Message(Constants.CURRENT_VERSION, (byte) Constants.CONTENT_POSITION, Operation.SEND_MESSAGE_RESPONSE, protocol.Exception.INVALID_ARGUMENT_NUM, new byte[0]);
-                    try {
-                        out.write(Marshaller.marshall(errorMessage));
-                    } catch (IOException e) {
-                        System.err.println("ERROR: Could not send the error message.");
-                        e.printStackTrace();
-                    }
-                    return false;
-                }
-
                 // Check if recipient exists
-                byte[] recipient = splitContent[0];
-                User recipientUser = new User(recipient);
-                if (!Server.clients.containsKey(recipientUser)) {
-                    // Send an error message
-                    Message errorMessage = new Message(Constants.CURRENT_VERSION, (byte) Constants.CONTENT_POSITION, Operation.SEND_MESSAGE_RESPONSE, protocol.Exception.USER_DOES_NOT_EXIST, new byte[0]);
-                    try {
-                        out.write(Marshaller.marshall(errorMessage));
-                    } catch (IOException e) {
-                        System.err.println("ERROR: Could not send the error message.");
-                        e.printStackTrace();
-                    }
-                    return false;
+                if (!Server.clients.containsKey(new User(splitContent[0]))) {
+                    return protocol.Exception.USER_DOES_NOT_EXIST;
                 }
                 break;
         }
-        return true;
-    }
-
-    // Utility functions for byte array parsing
-    private static byte[][] splitByteArray(byte[] array, byte separator) {
-        int separatorCount = 0;
-        for (byte b : array) {
-            if (b == separator) {
-                separatorCount++;
-            }
-        }
-
-        byte[][] result = new byte[separatorCount + 1][];
-        int index = 0;
-        int startIndex = 0;
-        for (int i = 0; i < array.length; i++) {
-            if (array[i] == separator) {
-                result[index] = Arrays.copyOfRange(array, startIndex, i);
-                startIndex = i + 1;
-                index++;
-            }
-        }
-        result[index] = Arrays.copyOfRange(array, startIndex, array.length);
-        return result;
-    }
-
-    private static UUID asUuid(byte[] bytes) {
-        ByteBuffer bb = ByteBuffer.wrap(bytes);
-        long firstLong = bb.getLong();
-        long secondLong = bb.getLong();
-        return new UUID(firstLong, secondLong);
+        return protocol.Exception.NONE;
     }
 
     // Utility function for determining if a user is logged in
@@ -231,6 +191,35 @@ public class ServerHandler implements Runnable {
 
         // Send a success message
         Message successMessage = new Message(Constants.CURRENT_VERSION, (byte) Constants.CONTENT_POSITION, Operation.SEND_MESSAGE_RESPONSE, protocol.Exception.NONE, new byte[0]);
+        try {
+            out.write(Marshaller.marshall(successMessage));
+        } catch (IOException e) {
+            System.err.println("ERROR: Could not send the success message.");
+            e.printStackTrace();
+        }
+    }
+
+    private void listAccountsHandler(byte[] regex) {
+        // Check if user is logged in
+        if (!isLoggedIn()) {
+            // Send an error message
+            Message errorMessage = new Message(Constants.CURRENT_VERSION, (byte) Constants.CONTENT_POSITION, Operation.LIST_ACCOUNTS_RESPONSE, protocol.Exception.NOT_LOGGED_IN, new byte[0]);
+            try {
+                out.write(Marshaller.marshall(errorMessage));
+            } catch (IOException e) {
+                System.err.println("ERROR: Could not send the error message.");
+                e.printStackTrace();
+            }
+            return;
+        }
+
+        // Compare the query to the list of users
+        for(User other : Server.clients.keySet()) {
+            String otherString = ByteConverter.byteArrayToString(other.getUsername());
+        }
+
+        // Send a success message
+        Message successMessage = new Message(Constants.CURRENT_VERSION, (byte) Constants.CONTENT_POSITION, Operation.LIST_ACCOUNTS_RESPONSE, protocol.Exception.NONE, accounts);
         try {
             out.write(Marshaller.marshall(successMessage));
         } catch (IOException e) {

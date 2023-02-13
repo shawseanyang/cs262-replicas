@@ -1,6 +1,5 @@
 package server;
 
-import static server.ServerHandler.*;
 import protocol.Constants;
 import protocol.Marshaller;
 import protocol.Message;
