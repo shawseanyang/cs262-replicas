@@ -4,6 +4,7 @@ public class Constants {
     public final static int PORT = 8080;
     public final static byte ARGUMENT_SEPARATOR = 9;
     public final static byte MESSAGE_SEPARATOR = 10;
+    public final static byte ESCAPE_CHARACTER = 92;
 
     public final static byte CURRENT_VERSION = 1;
 
