@@ -10,10 +10,10 @@ public class User {
 
     static class QueuedMessage {
         private User sender;
-        private UUID id;
         private byte[] message;
+        private UUID id;
 
-        public QueuedMessage(User sender, UUID id, byte[] message) {
+        public QueuedMessage(User sender, byte[] message, UUID id) {
             this.sender = sender;
             this.id = id;
             this.message = message;
@@ -46,12 +46,12 @@ public class User {
         return messages.peek().id;
     }
 
-    public void addMessage(User sender, UUID messageID, byte[] message) {
+    public void addMessage(User sender, byte[] message, UUID messageID) {
         // Don't add duplicate messages
         if (undeliveredMessages.contains(messageID))
             return;
         
-        messages.add(new QueuedMessage(sender, messageID, message));
+        messages.add(new QueuedMessage(sender, message, messageID));
         undeliveredMessages.add(messageID);
     }
 
