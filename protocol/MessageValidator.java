@@ -11,7 +11,7 @@ public class MessageValidator {
     put(Operation.CREATE_ACCOUNT, 1);
     put(Operation.LOG_IN, 1);
     put(Operation.LOG_OUT, 0);
-    put(Operation.SEND_MESSAGE, 2);
+    put(Operation.SEND_MESSAGE, 3);
     put(Operation.LIST_ACCOUNTS, 1);
     put(Operation.DELETE_ACCOUNT, 1);
   }};
