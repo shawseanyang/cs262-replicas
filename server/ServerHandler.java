@@ -36,13 +36,7 @@ public class ServerHandler implements Runnable {
         protocol.Exception resultingException = validateMessage();
         if (resultingException != protocol.Exception.NONE) {
             // Send an error message
-            Message errorMessage = new Message(Constants.CURRENT_VERSION, (byte) Constants.CONTENT_POSITION, message.getOperation(), resultingException, new byte[0]);
-            try {
-                out.write(Marshaller.marshall(errorMessage));
-            } catch (IOException e) {
-                System.err.println("ERROR: Could not send the error message.");
-                e.printStackTrace();
-            }
+            sendResponseMessage(resultingException);
             return;
         }
         
@@ -135,10 +129,11 @@ public class ServerHandler implements Runnable {
             return;
         }
 
+        // Compile the regex
         Pattern regexString = Pattern.compile(ByteConverter.byteArrayToString(regex));
 
-        ArrayList<byte[]> matchedUsers = new ArrayList<byte[]>();
         // Compare the query to the list of users
+        ArrayList<byte[]> matchedUsers = new ArrayList<byte[]>();
         for(User other : Server.clients.keySet()) {
             String otherString = ByteConverter.byteArrayToString(other.getUsername());
             Matcher matcher = regexString.matcher(otherString);
@@ -149,24 +144,8 @@ public class ServerHandler implements Runnable {
             }
         }
 
-
-        // TODO: Send the list of users as a success message
-
-
-
-
-        
-
-        Message responseMessage = new Message(Constants.CURRENT_VERSION, (byte) Constants.CONTENT_POSITION, message.getOperation(), protocol.Exception.NONE, other.getUsername());
-        try {
-            out.write(Marshaller.marshall(responseMessage));
-        } catch (IOException e) {
-            System.err.println("ERROR: Could not send the success message.");
-            e.printStackTrace();
-        }
-
         // Send a success message
-        sendResponseMessage(protocol.Exception.NONE);
+        sendResponseMessage(protocol.Exception.NONE, matchedUsers);
     }
 
     /* Recipient-related functions */
@@ -206,8 +185,8 @@ public class ServerHandler implements Runnable {
     }
 
     // Utility functions for sending response messages to the client
-    private boolean sendResponseMessage(protocol.Exception exception, byte[] content) {
-        Message responseMessage = new Message(Constants.CURRENT_VERSION, (byte) Constants.CONTENT_POSITION, message.getOperation(), exception, content);
+    private boolean sendResponseMessage(protocol.Exception exception, ArrayList<byte[]> args) {
+        Message responseMessage = new Message(Constants.CURRENT_VERSION, message.getOperation(), exception, args);
         try {
             out.write(Marshaller.marshall(responseMessage));
         } catch (IOException e) {
@@ -222,7 +201,7 @@ public class ServerHandler implements Runnable {
     }
 
     private boolean sendResponseMessage(protocol.Exception exception) {
-        return sendResponseMessage(exception, new byte[0]);
+        return sendResponseMessage(exception, new ArrayList<byte[]>());
     }
 
     // Utility function for determining if a user is logged in
