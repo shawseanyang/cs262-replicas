@@ -40,24 +40,32 @@ public class Server {
                 continue;
             }
 
+            // Read the message
+            byte[] message;
             try {
-                // Create a new data input and output stream
                 DataInputStream dis = new DataInputStream(s.getInputStream());
-                DataOutputStream dos = new DataOutputStream(s.getOutputStream());
-
-                // Read the message
-                byte[] message = dis.readAllBytes();
-
-                // Unmarshall the message
-                Message unmarshalledMessage = Marshaller.unmarshall(message);
-
-                // Create a new thread to handle the message
-                new Thread(new ServerHandler(unmarshalledMessage, s)).start();
+                message = dis.readAllBytes();
             } catch (IOException e) {
                 System.err.println("ERROR: Could not read the message.");
                 e.printStackTrace();
                 continue;
             }
+
+            // Unmarshall the message
+            Message unmarshalledMessage = Marshaller.unmarshall(message);
+
+            // Create a new data output stream
+            DataOutputStream dos;
+            try {
+                dos = new DataOutputStream(s.getOutputStream());
+            } catch (IOException e) {
+                System.err.println("ERROR: Could not create a new data output stream.");
+                e.printStackTrace();
+                continue;
+            }
+
+            // Create a new thread to handle the message
+            new Thread(new ServerHandler(unmarshalledMessage, s, dos)).start();
         }
     }
 }

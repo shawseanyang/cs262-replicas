@@ -1,34 +1,67 @@
 package server;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.UUID;
 
 public class User {
+
+    static class QueuedMessage {
+        private User sender;
+        private UUID id;
+        private byte[] message;
+
+        public QueuedMessage(User sender, UUID id, byte[] message) {
+            this.sender = sender;
+            this.id = id;
+            this.message = message;
+        }
+    }
+
     private byte[] username;
-    private Queue<byte[]> messages;
+    private Queue<QueuedMessage> messages;
+    private HashSet<UUID> undeliveredMessages;
 
     public User(byte[] username) {
         this.username = username;
-        this.messages = new LinkedList<byte[]>();
+        this.messages = new LinkedList<QueuedMessage>();
+        this.undeliveredMessages = new HashSet<UUID>();
     }
 
     public byte[] getUsername() {
         return username;
     }
 
+    public User getSender() {
+        return messages.peek().sender;
+    }
+
     public byte[] getMessage() {
-        return messages.peek();
+        return messages.peek().message;
     }
 
-    public void addMessage(byte[] message) {
-        messages.add(message);
+    public UUID getMessageId() {
+        return messages.peek().id;
     }
 
-    public byte[] removeMessage() {
-        return messages.poll();
+    public void addMessage(User sender, UUID messageID, byte[] message) {
+        // Don't add duplicate messages
+        if (undeliveredMessages.contains(messageID))
+            return;
+        
+        messages.add(new QueuedMessage(sender, messageID, message));
+        undeliveredMessages.add(messageID);
     }
 
+    public QueuedMessage removeMessage() {
+        QueuedMessage message = messages.poll();
+        undeliveredMessages.remove(message.id);
+        return message;
+    }
+
+    // TODO: Edit to regex match wildcards
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

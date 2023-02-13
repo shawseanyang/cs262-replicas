@@ -2,9 +2,10 @@ package protocol;
 
 public class Constants {
     public final static int PORT = 8080;
-    public final static int CURRENT_VERSION = 1;
     public final static byte ARGUMENT_SEPARATOR = 9;
     public final static byte MESSAGE_SEPARATOR = 10;
+
+    public final static byte CURRENT_VERSION = 1;
 
     // starting positions for each part of the message
     public final static int VERSION_POSITION = 0;
