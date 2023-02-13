@@ -1,5 +1,7 @@
 package protocol;
 
+import java.util.ArrayList;
+
 public class Marshaller {
     public static byte[] marshall(Message message) {
         byte[] marshalledMessage = new byte[message.getMessageLength()];
@@ -9,7 +11,7 @@ public class Marshaller {
           message.getMessageLength();
         marshalledMessage[Constants.OPERATION_POSITION] =
           message.getOperation().toByte();
-        marshalledMessage[Constants.CONTENT_POSITION] =
+        marshalledMessage[Constants.EXCEPTION_POSITION] =
           message.getException().toByte();
         
         System.arraycopy(message.getContent(), 0, marshalledMessage, Constants.CONTENT_POSITION, message.getContent().length);
