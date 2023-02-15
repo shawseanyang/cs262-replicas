@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package com.chatapp;
+
+service ChatService {
+  rpc createAccount(CreateAccountRequest) returns (CreateAccountResponse);
+  rpc logIn(LogInRequest) returns (LogInResponse);
+  rpc listAccounts(ListAccountsRequest) returns (ListAccountsResponse);
+  rpc sendMessage(SendMessageRequest) returns (SendMessageResponse);
+  rpc streamMessagesRequest(Empty) returns (stream streamMessagesResponse);
+  rpc logOut(Empty) returns (LogOutResponse);
+  rpc deleteAccount(DeleteAccountRequest) returns (DeleteAccountResponse);
+}
+
+message Empty {}
+
+message CreateAccountRequest {
+  string username = 1;
+}
+
+message CreateAccountResponse {
+  uint32 exception = 1;
+}
+
+message LogInRequest {
+  string username = 1;
+}
+
+message LogInResponse {
+  uint32 exception = 1;
+}
+
+message ListAccountsRequest {
+  string pattern = 1;
+}
+
+message ListAccountsResponse {
+  repeated string usernames = 1;
+  uint32 exception = 2;
+}
+
+message SendMessageRequest {
+  string recipient = 1;
+  string message = 2;
+}
+
+message SendMessageResponse {
+  uint32 exception = 1;
+}
+
+message streamMessagesResponse {
+  string sender = 1;
+  string message = 2;
+  uint32 exception = 3;
+}
+
+message LogOutResponse {
+  uint32 exception = 1;
+}
+
+message DeleteAccountRequest {
+  string username = 1;
+}
+
+message DeleteAccountResponse {
+  uint32 exception = 1;
+}
