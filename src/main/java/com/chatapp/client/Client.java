@@ -56,7 +56,7 @@ public class Client {
       if (command instanceof CreateAccountCommand) {
         CreateAccountCommand cast = (CreateAccountCommand) command;
         try {
-          //createAccount(cast, channel);
+          ClientHandler.createAccount(cast, blockingStub);
         } catch (Exception e) {
           System.out.println("-> Error: " + e.getMessage());
         }
