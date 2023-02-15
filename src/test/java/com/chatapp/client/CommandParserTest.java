@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 import com.chatapp.client.commands.Command;
+import com.chatapp.client.commands.ConnectCommand;
 import com.chatapp.client.commands.CreateAccountCommand;
 import com.chatapp.client.commands.DeleteAccountCommand;
 import com.chatapp.client.commands.ListAccountsCommand;
@@ -152,6 +153,47 @@ public class CommandParserTest {
     
     try {
       CommandParser.parse("send");
+    } catch (Exception e) {
+      assertTrue(e instanceof IllegalArgumentException);
+    }
+  }
+
+  @Test
+  public void parse_connectCommand_createsConnectCommand() {
+    
+    try {
+      Command command = CommandParser.parse("connect localhost 8080");
+      assertTrue(command instanceof ConnectCommand);
+    } catch (Exception e) {
+      assertTrue(false);
+    }
+  }
+
+  @Test
+  public void parse_connectCommandWithOnlyOneArgument_ExceptionThrown() {
+    
+    try {
+      CommandParser.parse("connect localhost");
+    } catch (Exception e) {
+      assertTrue(e instanceof IllegalArgumentException);
+    }
+  }
+
+  @Test
+  public void parse_connectCommandWithoutArguments_ExceptionThrown() {
+    
+    try {
+      CommandParser.parse("connect");
+    } catch (Exception e) {
+      assertTrue(e instanceof IllegalArgumentException);
+    }
+  }
+
+  @Test
+  public void parse_connectCommandWithInvalidPort_ExceptionThrown() {
+    
+    try {
+      CommandParser.parse("connect localhost 70000");
     } catch (Exception e) {
       assertTrue(e instanceof IllegalArgumentException);
     }

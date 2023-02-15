@@ -1,6 +1,7 @@
 package com.chatapp.client;
 
 import com.chatapp.client.commands.Command;
+import com.chatapp.client.commands.ConnectCommand;
 import com.chatapp.client.commands.CreateAccountCommand;
 import com.chatapp.client.commands.DeleteAccountCommand;
 import com.chatapp.client.commands.ListAccountsCommand;
@@ -20,6 +21,8 @@ public class CommandParser {
       String[] args = new String[parts.length - 1];
       System.arraycopy(parts, 1, args, 0, args.length);
       switch (commandName) {
+        case "connect":
+          return new ConnectCommand(args[0], Integer.parseInt(args[1]));
         case "create_account":
           return new CreateAccountCommand(args[0]);
         case "list_accounts":
