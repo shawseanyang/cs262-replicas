@@ -25,8 +25,6 @@ import com.chatapp.protocol.Exception;
 
 public class ClientHandler {
   public static void createAccount(CreateAccountCommand command, ChatServiceBlockingStub stub) throws UserAlreadyExistsException, InvalidUsernameException {
-    // create stub using channel
-    ChatServiceGrpc.ChatServiceBlockingStub stub = ChatServiceGrpc.newBlockingStub(channel);
     // create request using command
     CreateAccountRequest request =
       Chat.CreateAccountRequest.newBuilder()
