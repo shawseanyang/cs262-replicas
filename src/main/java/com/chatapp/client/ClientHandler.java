@@ -1,5 +1,11 @@
-package com.chatapp.client.commands;
+package com.chatapp.client;
 
+import com.chatapp.client.commands.CreateAccountCommand;
+import com.chatapp.client.commands.DeleteAccountCommand;
+import com.chatapp.client.commands.ListAccountsCommand;
+import com.chatapp.client.commands.LogInCommand;
+import com.chatapp.client.commands.LogOutCommand;
+import com.chatapp.client.commands.SendMessageCommand;
 import com.chatapp.client.exceptions.InvalidUsernameException;
 import com.chatapp.client.exceptions.NotLoggedInException;
 import com.chatapp.client.exceptions.UserAlreadyExistsException;
@@ -25,15 +31,16 @@ public class ClientHandler {
 
   }
 
-  public static void logIn(LogInCommand command, ManagedChannel channel) throws UserDoesNotExistException {
+  // returns the sessionId given by the server in a String
+  public static String logIn(LogInCommand command, ManagedChannel channel) throws UserDoesNotExistException {
+    return "";
+  }
+
+  public static void logOut(LogOutCommand command, ManagedChannel channel, String sessionId) throws NotLoggedInException {
 
   }
 
-  public static void logOut(LogOutCommand command, ManagedChannel channel) throws NotLoggedInException {
-
-  }
-
-  public static void sendMessage(SendMessageCommand command, ManagedChannel channel) throws UserDoesNotExistException, NotLoggedInException
+  public static void sendMessage(SendMessageCommand command, ManagedChannel channel, String sessionId) throws UserDoesNotExistException, NotLoggedInException
   {
 
   }
