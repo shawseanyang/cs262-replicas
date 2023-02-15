@@ -7,12 +7,10 @@ service ChatService {
   rpc logIn(LogInRequest) returns (LogInResponse);
   rpc listAccounts(ListAccountsRequest) returns (ListAccountsResponse);
   rpc sendMessage(SendMessageRequest) returns (SendMessageResponse);
-  rpc streamMessagesRequest(Empty) returns (stream streamMessagesResponse);
-  rpc logOut(Empty) returns (LogOutResponse);
+  rpc streamMessagesRequest(StreamMessagesRequest) returns (stream StreamMessagesResponse);
+  rpc logOut(StreamMessagesRequest) returns (LogOutResponse);
   rpc deleteAccount(DeleteAccountRequest) returns (DeleteAccountResponse);
 }
-
-message Empty {}
 
 message CreateAccountRequest {
   string username = 1;
@@ -28,6 +26,7 @@ message LogInRequest {
 
 message LogInResponse {
   uint32 exception = 1;
+  string sessionId = 2;
 }
 
 message ListAccountsRequest {
@@ -42,16 +41,25 @@ message ListAccountsResponse {
 message SendMessageRequest {
   string recipient = 1;
   string message = 2;
+  string sessionId = 3;
 }
 
 message SendMessageResponse {
   uint32 exception = 1;
 }
 
-message streamMessagesResponse {
+message StreamMessagesRequest {
+  string sessionId = 1;
+}
+
+message StreamMessagesResponse {
   string sender = 1;
   string message = 2;
   uint32 exception = 3;
+}
+
+message LogOutRequest {
+  string sessionId = 1;
 }
 
 message LogOutResponse {
