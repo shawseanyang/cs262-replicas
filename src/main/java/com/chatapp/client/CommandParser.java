@@ -32,7 +32,7 @@ public class CommandParser {
         case "login":
           return new LogInCommand(args[0]);
         case "delete_account":
-          return new DeleteAccountCommand();
+          return new DeleteAccountCommand(args[0]);
         case "send":
           return new SendMessageCommand(args[0], args[1]);
         default:
