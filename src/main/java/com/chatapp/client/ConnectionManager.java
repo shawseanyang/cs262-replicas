@@ -2,6 +2,7 @@ package com.chatapp.client;
 
 import com.chatapp.Chat.ChatMessage;
 import com.chatapp.Chat.CreateAccountRequest;
+import com.chatapp.Chat.CreateAccountResponse;
 import com.chatapp.ChatServiceGrpc.ChatServiceStub;
 import com.chatapp.client.commands.Command;
 import com.chatapp.client.commands.CreateAccountCommand;
@@ -11,7 +12,8 @@ import com.chatapp.client.commands.LogInCommand;
 import com.chatapp.client.commands.LogOutCommand;
 import com.chatapp.client.commands.SendMessageCommand;
 
-import io.grpc.Status;
+import com.google.rpc.Status;
+import com.google.rpc.Code;
 import io.grpc.stub.StreamObserver;
 
 // Connects to the server in a separate thread, and handles all communication with the server.
@@ -35,14 +37,25 @@ public class ConnectionManager extends Thread {
         stub.chat(new StreamObserver<ChatMessage>() {
           @Override
           public void onNext(ChatMessage message) {
-            // TODO
-            System.out.println(message);
+            // handle the message based on what type ("case") it is
+            switch (message.getMessageCase()) {
+              case CREATE_ACCOUNT_RESPONSE: {
+                // report success or failure
+                Status status = message.getCreateAccountResponse().getStatus();
+                if (status.getCode() == Code.OK.getNumber()) {
+                  System.out.println("-> Account created.");
+                } else {
+                  System.out.println("-> Error: " + status.getMessage());
+                }
+              }
+              default:
+                break;
+            }
           }
   
           @Override
           public void onError(Throwable t) {
-            Status status = Status.fromThrowable(t);
-            System.err.println("-> Error: " + status);
+            System.err.println("-> Error: " + t);
           }
   
           @Override

@@ -12,6 +12,7 @@ import io.grpc.ServerBuilder;
 import com.chatapp.ChatServiceGrpc;
 import com.chatapp.Chat.ChatMessage;
 import com.chatapp.Chat.CreateAccountRequest;
+import com.chatapp.Chat.CreateAccountResponse;
 import com.chatapp.Chat.DeleteAccountRequest;
 import com.chatapp.Chat.DistributeMessageResponse;
 import com.chatapp.Chat.ListAccountsRequest;
@@ -19,6 +20,8 @@ import com.chatapp.Chat.LogInRequest;
 import com.chatapp.Chat.LogOutRequest;
 import com.chatapp.Chat.SendMessageRequest;
 import com.chatapp.protocol.Constant;
+import com.google.rpc.Code;
+import com.google.rpc.Status;
 
 /**
  * Server that manages startup/shutdown of a {@code Chat} server.
@@ -86,13 +89,17 @@ public class ChatServer {
   }
 
   /**
-   * Implementation of {@code ChatService} that provides the handlers for the server
+   * Implementation of {@code ChatService} that provides the handlers for the
+   * server
    */
   static class ChatServiceImpl extends ChatServiceGrpc.ChatServiceImplBase {
+
     @Override
     public StreamObserver<ChatMessage> chat(final StreamObserver<ChatMessage> responseObserver) {
       /**
-       * Create a new StreamObserver that will handle the incoming messages from the client, overriding the methods to provide the logic for each event. onNext() is the default handler for normal messages.
+       * Create a new StreamObserver that will handle the incoming messages from the
+       * client, overriding the methods to provide the logic for each event. onNext()
+       * is the default handler for normal messages.
        */
       return new StreamObserver<ChatMessage>() {
         @Override
@@ -100,11 +107,24 @@ public class ChatServer {
           // handle the message based on what type ("case") it is
           switch (message.getMessageCase()) {
             case CREATE_ACCOUNT_REQUEST: {
-              // add entries to representativeThreads and pendingMessages for the new user initialized to null
               String username = message.getCreateAccountRequest().getUsername();
+              // respond with an exception if the username is already taken
+              if (representativeThreads.containsKey(username)) {
+                logger.info(
+                  "Failed to create account for " + username + " because the username is already taken"
+                );
+                responseObserver.onNext(
+                  ChatMessageGenerator
+                    .CREATE_ACCOUNT_USER_ALREADY_EXISTS(username));
+                return;
+              }
+              // add entries to representativeThreads and pendingMessages for the new user initialized to null
               representativeThreads.put(username, null);
               pendingMessages.put(username, null);
               logger.info("Created account for " + username);
+              // respond with a success message
+              responseObserver.onNext(
+                ChatMessageGenerator.CREATE_ACCOUNT_SUCCESS());
               break;
             }
             case LOG_IN_REQUEST: {
