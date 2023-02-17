@@ -6,7 +6,7 @@ import "google/rpc/status.proto";
 
 // A bidirectional streaming RPC
 service ChatService {
-  rpc Chat(stream ChatRequest) returns (stream ChatResponse) {}
+  rpc chat(stream ChatRequest) returns (stream ChatResponse) {}
 }
 
 // Requests come in the form of one of these messages
