@@ -25,25 +25,25 @@ import com.chatapp.protocol.Exception;
 
 public class ClientHandler {
   public static void createAccount(CreateAccountCommand command, ChatServiceBlockingStub stub) throws UserAlreadyExistsException, InvalidUsernameException {
-    // create request using command
-    CreateAccountRequest request =
-      Chat.CreateAccountRequest.newBuilder()
-        .setUsername(command.getUsername())
-        .build();
-    // Finally, make the call using the stub
-    Chat.CreateAccountResponse response = 
-      stub.createAccount(request);
-    // handle exceptions
-    if (response.getException() != 0) {
-      switch (com.chatapp.protocol.Exception.fromInt(response.getException())) {
-        case USER_ALREADY_EXISTS:
-          throw new UserAlreadyExistsException("Cannot create account because the username already exists.");
-        case INVALID_USERNAME:
-          throw new InvalidUsernameException("Cannot create account because the username is invalid.");
-        default:
-          break;
-      }
-    }
+    // // create request using command
+    // CreateAccountRequest request =
+    //   Chat.CreateAccountRequest.newBuilder()
+    //     .setUsername(command.getUsername())
+    //     .build();
+    // // Finally, make the call using the stub
+    // Chat.CreateAccountResponse response = 
+    //   stub.createAccount(request);
+    // // handle exceptions
+    // if (response.getException() != 0) {
+    //   switch (com.chatapp.protocol.Exception.fromInt(response.getException())) {
+    //     case USER_ALREADY_EXISTS:
+    //       throw new UserAlreadyExistsException("Cannot create account because the username already exists.");
+    //     case INVALID_USERNAME:
+    //       throw new InvalidUsernameException("Cannot create account because the username is invalid.");
+    //     default:
+    //       break;
+    //   }
+    // }
   }
 
   public static void deleteAccount(DeleteAccountCommand command, ChatServiceBlockingStub stub) throws InvalidUsernameException {

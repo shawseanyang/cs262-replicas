@@ -2,74 +2,106 @@ syntax = "proto3";
 
 package com.chatapp;
 
+import "google/rpc/status.proto";
+
+// A bidirectional streaming RPC
 service ChatService {
-  rpc createAccount(CreateAccountRequest) returns (CreateAccountResponse);
-  rpc logIn(LogInRequest) returns (LogInResponse);
-  rpc listAccounts(ListAccountsRequest) returns (ListAccountsResponse);
-  rpc sendMessage(SendMessageRequest) returns (SendMessageResponse);
-  rpc streamMessagesRequest(StreamMessagesRequest) returns (stream StreamMessagesResponse);
-  rpc logOut(StreamMessagesRequest) returns (LogOutResponse);
-  rpc deleteAccount(DeleteAccountRequest) returns (DeleteAccountResponse);
+  rpc Chat(stream ChatRequest) returns (stream ChatResponse) {}
 }
 
+// Requests come in the form of one of these messages
+message ChatRequest {
+  oneof request {
+    CreateAccountRequest create_account = 1;
+    LogInRequest log_in = 2;
+    ListAccountsRequest list_accounts = 3;
+    SendMessageRequest send_message = 4;
+    LogOutRequest log_out = 5;
+    DeleteAccountRequest delete_account = 6;
+    DistributeMessageRequest distribute_message = 7;
+  }
+}
+
+// Responses come in the form of one of these messages
+message ChatResponse {
+  oneof response {
+    CreateAccountResponse create_account = 1;
+    LogInResponse log_in = 2;
+    ListAccountsResponse list_accounts = 3;
+    SendMessageResponse send_message = 4;
+    LogOutResponse log_out = 5;
+    DeleteAccountResponse delete_account = 6;
+    DistributeMessageResponse distribute_message = 7;
+  }
+}
+
+// Create an account with the username
 message CreateAccountRequest {
   string username = 1;
 }
 
+// The server responds with a status
 message CreateAccountResponse {
-  uint32 exception = 1;
+  google.rpc.Status status = 1;
 }
 
+// Login with the username
 message LogInRequest {
   string username = 1;
 }
 
+// The server responds with a status
 message LogInResponse {
-  uint32 exception = 1;
-  string sessionId = 2;
+  google.rpc.Status status = 1;
 }
 
+// List all accounts that match the pattern
 message ListAccountsRequest {
   string pattern = 1;
 }
 
+// The server responds with a status and (if status is OK), a list of account usernames
 message ListAccountsResponse {
-  repeated string usernames = 1;
-  uint32 exception = 2;
+  google.rpc.Status status = 1;
+  repeated string accounts = 2;
 }
 
+// Send a message to the recipient from the current logged in user (must be logged in)
 message SendMessageRequest {
   string recipient = 1;
   string message = 2;
-  string sessionId = 3;
 }
 
+// The server responds with a status
 message SendMessageResponse {
-  uint32 exception = 1;
+  google.rpc.Status status = 1;
 }
 
-message StreamMessagesRequest {
-  string sessionId = 1;
-}
+// Log out of the current account (must be logged in)
+message LogOutRequest {}
 
-message StreamMessagesResponse {
-  string sender = 1;
-  string message = 2;
-  uint32 exception = 3;
-}
-
-message LogOutRequest {
-  string sessionId = 1;
-}
-
+// The server responds with a status
 message LogOutResponse {
-  uint32 exception = 1;
+  google.rpc.Status status = 1;
 }
 
+// Delete the account with the username (anybody can delete any account)
 message DeleteAccountRequest {
   string username = 1;
 }
 
+// The server responds with a status
 message DeleteAccountResponse {
-  uint32 exception = 1;
+  google.rpc.Status status = 1;
+}
+
+// The server uses this to send messages to the client
+message DistributeMessageRequest {
+  string sender = 1;
+  string message = 2;
+}
+
+// The response to a message distribution is just a status
+message DistributeMessageResponse {
+  google.rpc.Status status = 1;
 }
