@@ -1,9 +1,12 @@
 package com.chatapp.client;
 
 import java.util.Scanner;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
+import com.chatapp.Chat.ChatMessage;
 import com.chatapp.ChatServiceGrpc;
-import com.chatapp.ChatServiceGrpc.ChatServiceBlockingStub;
+import com.chatapp.ChatServiceGrpc.ChatServiceStub;
 import com.chatapp.client.commands.Command;
 import com.chatapp.client.commands.ConnectCommand;
 import com.chatapp.client.commands.CreateAccountCommand;
@@ -16,14 +19,19 @@ import com.chatapp.protocol.Constant;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.Status;
+import io.grpc.stub.StreamObserver;
 
-// Entry point of the client application. Listens for user commands from the console and executes them. This class is responsible for UI logic. It is responsible for creating the stubs for the server, and then passing the stubs to the handlers.
+// Entry point of the client application. Listens for user commands from the console and executes them.
 
 public class Client {
   static Scanner in = new Scanner(System.in);
-  static ChatServiceBlockingStub blockingStub;
-  static String sessionId;
+  static ChatServiceStub stub;
+  static BlockingQueue<Command> pendingCommands = new LinkedBlockingQueue<Command>();
 
+  /**
+   * Entry point. Parses user commands from the console and adds then to the queue of pending commands unless the command is connect, in which case it creates a new channel, creates a stub, and connects to the server.
+   */
   public static void main(String[] args) {
     // listen for new user commands from the console
     while(true) {
@@ -36,47 +44,42 @@ public class Client {
         continue;
       }
 
-      // when its a connect command, create a new channel to the server
+      // when its a connect command, create a new channel, create a stub, then connect to the server using the ConnectionManager, which splits off into a separate thread
       if (command instanceof ConnectCommand) {
         ConnectCommand cast = (ConnectCommand) command;
-        ManagedChannel channel = ManagedChannelBuilder
-          .forTarget(cast.getHost() + ":" + Constant.PORT)
-          .usePlaintext(true)
+        ManagedChannel channel =
+          ManagedChannelBuilder.forAddress(cast.getHost(), Constant.PORT)
+          .usePlaintext()
           .build();
-        blockingStub = ChatServiceGrpc.newBlockingStub(channel);
+        stub = ChatServiceGrpc.newStub(channel);
+        try {
+          ConnectionManager cm = new ConnectionManager(stub);
+          cm.start(); // new thread
+        } catch (Exception e) {
+          System.out.println("-> Failed to connect: " + e.getMessage());
+        }
         continue;
       }
       
       // if there is no stub, then the user must connect first
-      if (blockingStub == null) {
+      if (stub == null) {
         System.out.println("-> Error: You must connect to a server first.");
         continue;
       }
 
-      // execute the command
-      if (command instanceof CreateAccountCommand) {
-        CreateAccountCommand cast = (CreateAccountCommand) command;
-        try {
-          ClientHandler.createAccount(cast, blockingStub);
-        } catch (Exception e) {
-          System.out.println("-> Error: " + e.getMessage());
-        }
-      }
-      else if (command instanceof DeleteAccountCommand) {
-        DeleteAccountCommand cast = (DeleteAccountCommand) command;
-      }
-      else if (command instanceof ListAccountsCommand) {
-        ListAccountsCommand cast = (ListAccountsCommand) command;
-      }
-      else if (command instanceof LogInCommand) {
-        LogInCommand cast = (LogInCommand) command;
-      }
-      else if (command instanceof LogOutCommand) {
-        LogOutCommand cast = (LogOutCommand) command;
-      }
-      else if (command instanceof SendMessageCommand) {
-        SendMessageCommand cast = (SendMessageCommand) command;
+      // add the command to the queue of pending commands
+      try {
+        pendingCommands.put(command);
+      } catch (InterruptedException e) {
+        System.out.println("-> Error: " + e.getMessage());
       }
     }
+  }
+
+  /*
+   * Allows the ConnectionManager to get the next command from the queue.
+   */
+  public static Command getNextCommand() throws InterruptedException {
+    return pendingCommands.take();
   }
 }

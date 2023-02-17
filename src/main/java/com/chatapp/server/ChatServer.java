@@ -39,6 +39,7 @@ public class ChatServer {
         System.err.println("*** server shut down");
       }
     });
+    server.start();
   }
 
   private void stop() throws InterruptedException {
@@ -77,8 +78,9 @@ public class ChatServer {
        */
       return new StreamObserver<ChatMessage>() {
         @Override
-        public void onNext(ChatMessage note) {
-
+        public void onNext(ChatMessage message) {
+          // send the message back to the client
+          responseObserver.onNext(message);
         }
 
         @Override
