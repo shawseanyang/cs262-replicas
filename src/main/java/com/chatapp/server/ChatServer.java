@@ -9,6 +9,13 @@ import java.util.logging.Logger;
 import io.grpc.ServerBuilder;
 import com.chatapp.ChatServiceGrpc;
 import com.chatapp.Chat.ChatMessage;
+import com.chatapp.Chat.CreateAccountRequest;
+import com.chatapp.Chat.DeleteAccountRequest;
+import com.chatapp.Chat.DistributeMessageResponse;
+import com.chatapp.Chat.ListAccountsRequest;
+import com.chatapp.Chat.LogInRequest;
+import com.chatapp.Chat.LogOutRequest;
+import com.chatapp.Chat.SendMessageRequest;
 import com.chatapp.protocol.Constant;
 
 /**
@@ -79,8 +86,46 @@ public class ChatServer {
       return new StreamObserver<ChatMessage>() {
         @Override
         public void onNext(ChatMessage message) {
-          // send the message back to the client
-          responseObserver.onNext(message);
+          // handle the message based on what type ("case") it is
+          switch (message.getMessageCase()) {
+            case CREATE_ACCOUNT_REQUEST: {
+              // TODO
+              CreateAccountRequest request = message.getCreateAccountRequest();
+              break;
+            }
+            case LOG_IN_REQUEST: {
+              // TODO
+              LogInRequest request = message.getLogInRequest();
+              break;
+            }
+            case LOG_OUT_REQUEST: {
+              // TODO
+              LogOutRequest request = message.getLogOutRequest();
+              break;
+            }
+            case SEND_MESSAGE_REQUEST: {
+              // TODO
+              SendMessageRequest request = message.getSendMessageRequest();
+              break;
+            }
+            case LIST_ACCOUNTS_REQUEST: {
+              // TODO
+              ListAccountsRequest request = message.getListAccountsRequest();
+              break;
+            }
+            case DELETE_ACCOUNT_REQUEST: {
+              // TODO
+              DeleteAccountRequest request = message.getDeleteAccountRequest();
+              break;
+            }
+            case DISTRIBUTE_MESSAGE_RESPONSE: {
+              // TODO
+              DistributeMessageResponse response = message.getDistributeMessageResponse();
+              break;
+            }
+            default:
+              break;
+          }
         }
 
         @Override
