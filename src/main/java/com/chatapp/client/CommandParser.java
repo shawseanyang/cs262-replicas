@@ -27,9 +27,9 @@ public class CommandParser {
           return new CreateAccountCommand(args[0]);
         case "list_accounts":
           return new ListAccountsCommand(args[0]);
-        case "logout":
+        case "log_out":
           return new LogOutCommand();
-        case "login":
+        case "log_in":
           return new LogInCommand(args[0]);
         case "delete_account":
           return new DeleteAccountCommand(args[0]);
