@@ -4,15 +4,20 @@ package com.chatapp.server;
 
 public class PendingMessage {
   private String recipient;
+  private String sender;
   private String message;
 
-  public PendingMessage(String recipient, String message) {
+  public PendingMessage(String recipient, String sender, String message) {
     this.recipient = recipient;
     this.message = message;
   }
 
   public String getMessage() {
     return message;
+  }
+
+  public String getSender() {
+    return sender;
   }
 
   public String getRecipient() {

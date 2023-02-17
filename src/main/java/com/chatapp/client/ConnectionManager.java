@@ -3,6 +3,7 @@ package com.chatapp.client;
 import com.chatapp.Chat.ChatMessage;
 import com.chatapp.Chat.CreateAccountRequest;
 import com.chatapp.Chat.CreateAccountResponse;
+import com.chatapp.Chat.LogInRequest;
 import com.chatapp.ChatServiceGrpc.ChatServiceStub;
 import com.chatapp.client.commands.Command;
 import com.chatapp.client.commands.CreateAccountCommand;
@@ -47,6 +48,17 @@ public class ConnectionManager extends Thread {
                 } else {
                   System.out.println("-> Error: " + status.getMessage());
                 }
+                break;
+              }
+              case LOG_IN_RESPONSE: {
+                // report success or failure
+                Status status = message.getLogInResponse().getStatus();
+                if (status.getCode() == Code.OK.getNumber()) {
+                  System.out.println("-> Logged in.");
+                } else {
+                  System.out.println("-> Error: " + status.getMessage());
+                }
+                break;
               }
               default:
                 break;
@@ -94,6 +106,13 @@ public class ConnectionManager extends Thread {
         }
         else if (command instanceof LogInCommand) {
           LogInCommand cast = (LogInCommand) command;
+          ChatMessage message = ChatMessage.newBuilder()
+            .setLogInRequest(
+              LogInRequest.newBuilder()
+                .setUsername(cast.getUsername())
+                .build()
+            ).build();
+          requestObserver.onNext(message);
         }
         else if (command instanceof LogOutCommand) {
           LogOutCommand cast = (LogOutCommand) command;

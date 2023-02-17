@@ -5,6 +5,7 @@ import io.grpc.stub.StreamObserver;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -89,6 +90,19 @@ public class ChatServer {
   }
 
   /**
+   * Grab the next message for the user with the given username
+   * @param username
+   * @return the next message for the user or null if something went wrong
+   */
+  public static PendingMessage getNextMessageFor(String username) {
+    try {
+      return pendingMessages.get(username).take();
+    } catch (InterruptedException e) {
+      return null;
+    }
+  }
+
+  /**
    * Implementation of {@code ChatService} that provides the handlers for the
    * server
    */
@@ -118,18 +132,38 @@ public class ChatServer {
                     .CREATE_ACCOUNT_USER_ALREADY_EXISTS(username));
                 return;
               }
-              // add entries to representativeThreads and pendingMessages for the new user initialized to null
+              // add entries to representativeThreads and pendingMessages for the new user initialized to null and empty, respectively
               representativeThreads.put(username, null);
-              pendingMessages.put(username, null);
+              pendingMessages.put(
+                username,
+                new LinkedBlockingDeque<PendingMessage>()
+              );
               logger.info("Created account for " + username);
               // respond with a success message
               responseObserver.onNext(
-                ChatMessageGenerator.CREATE_ACCOUNT_SUCCESS());
+                ChatMessageGenerator.CREATE_ACCOUNT_SUCCESS(username));
               break;
             }
             case LOG_IN_REQUEST: {
-              // TODO
-              LogInRequest request = message.getLogInRequest();
+              String username = message.getLogInRequest().getUsername();
+              // respond with an exception if the username does not exist
+              if (!representativeThreads.containsKey(username)) {
+                logger.info(
+                  "Failed to log in " + username + " because the username does not exist"
+                );
+                responseObserver.onNext(
+                  ChatMessageGenerator
+                    .LOG_IN_USER_DOES_NOT_EXIST(username));
+                return;
+              }
+              // create a new thread to handle the user's connection
+              Thread md = new MessageDistributor(username, responseObserver);
+              md.start();
+              
+              logger.info("Logged in " + username);
+              // respond with a success message
+              responseObserver.onNext(
+                ChatMessageGenerator.LOG_IN_SUCCESS(username));
               break;
             }
             case LOG_OUT_REQUEST: {
