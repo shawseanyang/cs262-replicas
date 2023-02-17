@@ -6,32 +6,28 @@ import "google/rpc/status.proto";
 
 // A bidirectional streaming RPC
 service ChatService {
-  rpc chat(stream ChatRequest) returns (stream ChatResponse) {}
+  rpc chat(stream ChatMessage) returns (stream ChatMessage) {}
 }
 
-// Requests come in the form of one of these messages
-message ChatRequest {
-  oneof request {
-    CreateAccountRequest create_account = 1;
-    LogInRequest log_in = 2;
-    ListAccountsRequest list_accounts = 3;
-    SendMessageRequest send_message = 4;
-    LogOutRequest log_out = 5;
-    DeleteAccountRequest delete_account = 6;
-    DistributeMessageRequest distribute_message = 7;
-  }
-}
-
-// Responses come in the form of one of these messages
-message ChatResponse {
-  oneof response {
-    CreateAccountResponse create_account = 1;
-    LogInResponse log_in = 2;
-    ListAccountsResponse list_accounts = 3;
-    SendMessageResponse send_message = 4;
-    LogOutResponse log_out = 5;
-    DeleteAccountResponse delete_account = 6;
-    DistributeMessageResponse distribute_message = 7;
+// Messages between the server and client come in the form of one of these messages
+message ChatMessage {
+  oneof message {
+    // Requests
+    CreateAccountRequest create_account_request = 1;
+    LogInRequest log_in_request = 2;
+    ListAccountsRequest list_accounts_request = 3;
+    SendMessageRequest send_message_request = 4;
+    LogOutRequest log_out_request = 5;
+    DeleteAccountRequest delete_account_request = 6;
+    DistributeMessageRequest distribute_message_request = 7;
+    // Responses
+    CreateAccountResponse create_account_response = 8;
+    LogInResponse log_in_response = 9;
+    ListAccountsResponse list_accounts_response = 10;
+    SendMessageResponse send_message_response = 11;
+    LogOutResponse log_out_response = 12;
+    DeleteAccountResponse delete_account_response = 13;
+    DistributeMessageResponse distribute_message_response = 14;
   }
 }
 
