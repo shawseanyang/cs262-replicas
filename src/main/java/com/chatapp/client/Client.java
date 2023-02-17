@@ -12,6 +12,7 @@ import com.chatapp.client.commands.ListAccountsCommand;
 import com.chatapp.client.commands.LogInCommand;
 import com.chatapp.client.commands.LogOutCommand;
 import com.chatapp.client.commands.SendMessageCommand;
+import com.chatapp.protocol.Constant;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -39,7 +40,7 @@ public class Client {
       if (command instanceof ConnectCommand) {
         ConnectCommand cast = (ConnectCommand) command;
         ManagedChannel channel = ManagedChannelBuilder
-          .forTarget(cast.getHost() + ":" + cast.getPort())
+          .forTarget(cast.getHost() + ":" + Constant.PORT)
           .usePlaintext(true)
           .build();
         blockingStub = ChatServiceGrpc.newBlockingStub(channel);
