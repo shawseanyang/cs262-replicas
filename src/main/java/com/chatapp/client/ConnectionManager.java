@@ -1,6 +1,7 @@
 package com.chatapp.client;
 
 import com.chatapp.Chat.ChatMessage;
+import com.chatapp.Chat.CreateAccountRequest;
 import com.chatapp.ChatServiceGrpc.ChatServiceStub;
 import com.chatapp.client.commands.Command;
 import com.chatapp.client.commands.CreateAccountCommand;
@@ -64,6 +65,13 @@ public class ConnectionManager extends Thread {
       try {
         if (command instanceof CreateAccountCommand) {
           CreateAccountCommand cast = (CreateAccountCommand) command;
+          ChatMessage message = ChatMessage.newBuilder()
+            .setCreateAccountRequest(
+              CreateAccountRequest.newBuilder()
+                .setUsername(cast.getUsername())
+                .build()
+            ).build();
+          requestObserver.onNext(message);
         }
         else if (command instanceof DeleteAccountCommand) {
           DeleteAccountCommand cast = (DeleteAccountCommand) command;

@@ -3,6 +3,8 @@ package com.chatapp.server;
 import io.grpc.Server;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -24,7 +26,16 @@ import com.chatapp.protocol.Constant;
 public class ChatServer {
   private static final Logger logger = Logger.getLogger(ChatServer.class.getName());
 
+  // The gRPC server object
   private Server server;
+
+  /*
+   * Maps a username to the thread that is handling the user's connection
+   * If a username is mapped to null, that means the user is not logged in
+   */
+  private static HashMap<String, Thread> representativeThreads = new HashMap<String, Thread>();
+
+  private static HashMap<String, BlockingQueue<PendingMessage>> pendingMessages = new HashMap<String, BlockingQueue<PendingMessage>>();
 
   private void start() throws IOException {
     server = ServerBuilder
@@ -89,8 +100,11 @@ public class ChatServer {
           // handle the message based on what type ("case") it is
           switch (message.getMessageCase()) {
             case CREATE_ACCOUNT_REQUEST: {
-              // TODO
-              CreateAccountRequest request = message.getCreateAccountRequest();
+              // add entries to representativeThreads and pendingMessages for the new user initialized to null
+              String username = message.getCreateAccountRequest().getUsername();
+              representativeThreads.put(username, null);
+              pendingMessages.put(username, null);
+              logger.info("Created account for " + username);
               break;
             }
             case LOG_IN_REQUEST: {
