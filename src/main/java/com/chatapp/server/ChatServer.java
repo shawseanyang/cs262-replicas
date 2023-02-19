@@ -303,11 +303,6 @@ public class ChatServer {
               DeleteAccountRequest request = message.getDeleteAccountRequest();
               break;
             }
-            case DISTRIBUTE_MESSAGE_RESPONSE: {
-              // TODO
-              DistributeMessageResponse response = message.getDistributeMessageResponse();
-              break;
-            }
             default:
               break;
           }

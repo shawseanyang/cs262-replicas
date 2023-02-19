@@ -27,7 +27,6 @@ message ChatMessage {
     SendMessageResponse send_message_response = 11;
     LogOutResponse log_out_response = 12;
     DeleteAccountResponse delete_account_response = 13;
-    DistributeMessageResponse distribute_message_response = 14;
   }
 }
 
@@ -95,9 +94,4 @@ message DeleteAccountResponse {
 message DistributeMessageRequest {
   string sender = 1;
   string message = 2;
-}
-
-// The response to a message distribution is just a status
-message DistributeMessageResponse {
-  google.rpc.Status status = 1;
 }
