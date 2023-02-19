@@ -4,7 +4,9 @@ import io.grpc.Server;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.concurrent.BlockingQueue;
+import java.util.Optional;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -12,17 +14,11 @@ import java.util.logging.Logger;
 import io.grpc.ServerBuilder;
 import com.chatapp.ChatServiceGrpc;
 import com.chatapp.Chat.ChatMessage;
-import com.chatapp.Chat.CreateAccountRequest;
-import com.chatapp.Chat.CreateAccountResponse;
 import com.chatapp.Chat.DeleteAccountRequest;
 import com.chatapp.Chat.DistributeMessageResponse;
 import com.chatapp.Chat.ListAccountsRequest;
-import com.chatapp.Chat.LogInRequest;
-import com.chatapp.Chat.LogOutRequest;
-import com.chatapp.Chat.SendMessageRequest;
 import com.chatapp.protocol.Constant;
-import com.google.rpc.Code;
-import com.google.rpc.Status;
+import com.google.protobuf.Message;
 
 /**
  * Server that manages startup/shutdown of a {@code Chat} server.
@@ -33,13 +29,20 @@ public class ChatServer {
   // The gRPC server object
   private Server server;
 
-  /*
-   * Maps a username to the thread that is handling the user's connection
-   * If a username is mapped to null, that means the user is not logged in
+  /**
+   * Associates users to their MessageDistributors, which is a proxy for
+   * whether the user is logged in. Uses Optional to allow for "null" values,
+   * representing a user that is not logged in.
    */
-  private static HashMap<String, Thread> representativeThreads = new HashMap<String, Thread>();
+  private static ConcurrentHashMap<String, Optional<MessageDistributor>> messageDistributors = new ConcurrentHashMap<String, Optional<MessageDistributor>>();
 
-  private static HashMap<String, BlockingQueue<PendingMessage>> pendingMessages = new HashMap<String, BlockingQueue<PendingMessage>>();
+  // An empty message distributor for use with the ConcurrentHashMap
+  private static final Optional<MessageDistributor> EMPTY_MESSAGE_DISTRIBUTOR = Optional.empty();
+
+  /**
+   * Tracks the messages that are waiting to be sent to each user
+   */
+  private static ConcurrentHashMap<String, BlockingDeque<PendingMessage>> pendingMessages = new ConcurrentHashMap<String, BlockingDeque<PendingMessage>>();
 
   private void start() throws IOException {
     server = ServerBuilder
@@ -91,6 +94,7 @@ public class ChatServer {
 
   /**
    * Grab the next message for the user with the given username
+   * 
    * @param username
    * @return the next message for the user or null if something went wrong
    */
@@ -100,6 +104,31 @@ public class ChatServer {
     } catch (InterruptedException e) {
       return null;
     }
+  }
+
+  /**
+   * Put a message back onto the front of the queue the queue for the user with 
+   * the given username. Keep trying until it works.
+   * @param username
+   * @param message
+   */
+  public static void putMessageBackToDeliverLater(String username, PendingMessage message) {
+    while(true) {
+      try {
+        pendingMessages.get(username).putFirst(message);
+        return;
+      } catch (InterruptedException e) {}
+    }
+  }
+
+  /**
+   * Return whether a user is logged in
+   * @param username
+   */
+  public static boolean isLoggedIn(String username) {
+    return 
+      messageDistributors.containsKey(username) &&
+      !messageDistributors.get(username).equals(EMPTY_MESSAGE_DISTRIBUTOR);
   }
 
   /**
@@ -116,6 +145,22 @@ public class ChatServer {
        * is the default handler for normal messages.
        */
       return new StreamObserver<ChatMessage>() {
+
+        /**
+         * The user that this StreamObserver is responsible for
+         * Becomes populated when the user logs in
+         * And becomes null when the user logs out
+         * Is used to determine the sender when sending messages
+         * and to determine who to log out when a log out request is received
+         * (hint: its this.username!)
+         */
+        String username = null;
+
+        /**
+         * Make the responseObserver thread-safe
+         */
+        ConcurrentStreamObserver<ChatMessage> cResponseObserver = new ConcurrentStreamObserver<ChatMessage>(responseObserver);
+
         @Override
         public void onNext(ChatMessage message) {
           // handle the message based on what type ("case") it is
@@ -123,57 +168,129 @@ public class ChatServer {
             case CREATE_ACCOUNT_REQUEST: {
               String username = message.getCreateAccountRequest().getUsername();
               // respond with an exception if the username is already taken
-              if (representativeThreads.containsKey(username)) {
+              if (messageDistributors.containsKey(username)) {
                 logger.info(
-                  "Failed to create account for " + username + " because the username is already taken"
-                );
-                responseObserver.onNext(
-                  ChatMessageGenerator
-                    .CREATE_ACCOUNT_USER_ALREADY_EXISTS(username));
+                    "Failed to create account for " + username + " because the username is already taken");
+                cResponseObserver.onNext(
+                    ChatMessageGenerator
+                        .CREATE_ACCOUNT_USER_ALREADY_EXISTS(username));
                 return;
               }
-              // add entries to representativeThreads and pendingMessages for the new user initialized to null and empty, respectively
-              representativeThreads.put(username, null);
+              // mark the user as created but not logged in yet
+              messageDistributors.put(username, EMPTY_MESSAGE_DISTRIBUTOR);
+              // create a new queue for the user to hold pending messages
               pendingMessages.put(
-                username,
-                new LinkedBlockingDeque<PendingMessage>()
-              );
+                  username,
+                  new LinkedBlockingDeque<PendingMessage>());
               logger.info("Created account for " + username);
               // respond with a success message
-              responseObserver.onNext(
-                ChatMessageGenerator.CREATE_ACCOUNT_SUCCESS(username));
+              cResponseObserver.onNext(
+                  ChatMessageGenerator.CREATE_ACCOUNT_SUCCESS(username));
               break;
             }
             case LOG_IN_REQUEST: {
               String username = message.getLogInRequest().getUsername();
               // respond with an exception if the username does not exist
-              if (!representativeThreads.containsKey(username)) {
+              if (!messageDistributors.containsKey(username)) {
                 logger.info(
-                  "Failed to log in " + username + " because the username does not exist"
-                );
-                responseObserver.onNext(
-                  ChatMessageGenerator
-                    .LOG_IN_USER_DOES_NOT_EXIST(username));
+                    "Failed to log in " + username + " because the username does not exist");
+                cResponseObserver.onNext(
+                    ChatMessageGenerator
+                        .LOG_IN_USER_DOES_NOT_EXIST(username));
                 return;
               }
-              // create a new thread to handle the user's connection
-              Thread md = new MessageDistributor(username, responseObserver);
+
+              // create a new thread to distribute messages to the user on demand
+              MessageDistributor md = new MessageDistributor(username, cResponseObserver);
+              messageDistributors.put(username, Optional.of(md));
               md.start();
-              
+
+              // if this ResponseObserver was previously representing another user, log that user out first
+              if (this.username != null) {
+                // stop the MessageDistributor for the previous user
+                messageDistributors.get(this.username).get().cease();
+                // then remove the MessageDistributor, marking the user as logged out
+                messageDistributors.put(username, EMPTY_MESSAGE_DISTRIBUTOR);
+                logger.info("Logged out " + this.username);
+                // notify the client that the previous user has been logged out
+                cResponseObserver.onNext(
+                    ChatMessageGenerator.LOG_OUT_SUCCESS(this.username));
+              }
+
+              // mark this ResponseObserver as representing the user
+              this.username = username;
+
               logger.info("Logged in " + username);
               // respond with a success message
-              responseObserver.onNext(
-                ChatMessageGenerator.LOG_IN_SUCCESS(username));
+              cResponseObserver.onNext(
+                  ChatMessageGenerator.LOG_IN_SUCCESS(username));
               break;
             }
             case LOG_OUT_REQUEST: {
-              // TODO
-              LogOutRequest request = message.getLogOutRequest();
+              // respond with an exception if the client represented by this ResponseObserver is not logged in
+              if (this.username == null) {
+                logger.info("Failed to log out because the user is not logged in");
+                cResponseObserver.onNext(
+                    ChatMessageGenerator.LOG_OUT_USER_NOT_LOGGED_IN(
+                        this.username));
+                return;
+              } else {
+                // store the username in a local variable so we can use it after we null out this.username
+                String username = this.username;
+
+                // stop the MessageDistributor for the previous user
+                messageDistributors.get(this.username).get().cease();
+                // then remove the MessageDistributor, marking the user as logged out
+                messageDistributors.put(username, EMPTY_MESSAGE_DISTRIBUTOR);
+
+                // and this ResponseObserver no longer represents them
+                this.username = null;
+
+                // respond with a success message
+                cResponseObserver.onNext(
+                    ChatMessageGenerator.LOG_OUT_SUCCESS(username));
+                
+                logger.info("Logged out " + username);
+              }
               break;
             }
             case SEND_MESSAGE_REQUEST: {
-              // TODO
-              SendMessageRequest request = message.getSendMessageRequest();
+              String recipient = message.getSendMessageRequest().getRecipient();
+              String messageText = message.getSendMessageRequest().getMessage();
+
+              // respond with an exception if the client represented by this ResponseObserver is not logged in
+              if (this.username == null) {
+                logger.info("Failed to send message because the user is not logged in");
+                cResponseObserver.onNext(
+                    ChatMessageGenerator.SEND_MESSAGE_USER_NOT_LOGGED_IN(
+                        this.username));
+                return;
+              }
+
+              // respond with an exception if the recipient does not exist
+              // note: despite the fact that the variable is called logInStatus, here we are checking if the recipient username EXISTS in the table; NOT whether they're logged in
+              if (!messageDistributors.containsKey(recipient)) {
+                logger.info("Failed to send message because the recipient does not exist");
+                cResponseObserver.onNext(
+                    ChatMessageGenerator.SEND_MESSAGE_RECIPIENT_DOES_NOT_EXIST(recipient));
+                return;
+              }
+
+              // put the message onto the end of the recipient's queue of pending messages (keep trying until it works)
+              while(true) {
+                try {
+                  pendingMessages.get(recipient).put(
+                      new PendingMessage(recipient, this.username, messageText));
+                  break;
+                } catch (InterruptedException e) {}
+              }
+
+              logger.info("Queued message from " + this.username + " to " + recipient);
+
+              // respond with a success message
+              cResponseObserver.onNext(
+                  ChatMessageGenerator.SEND_MESSAGE_SUCCESS(this.username, recipient));
+
               break;
             }
             case LIST_ACCOUNTS_REQUEST: {
@@ -198,7 +315,14 @@ public class ChatServer {
 
         @Override
         public void onError(Throwable t) {
-          logger.log(Level.WARNING, "Encountered error in routeChat", t);
+          // if the client disconnects, log them out
+          if (this.username != null) {
+            // stop the MessageDistributor for the user
+            messageDistributors.get(this.username).get().cease();
+            // then remove the MessageDistributor, marking the user as logged out
+            messageDistributors.put(username, EMPTY_MESSAGE_DISTRIBUTOR);
+            logger.info("Logged out " + this.username + " because they disconnected");
+          }
         }
 
         @Override

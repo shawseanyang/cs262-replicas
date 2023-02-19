@@ -9,6 +9,7 @@ public class PendingMessage {
 
   public PendingMessage(String recipient, String sender, String message) {
     this.recipient = recipient;
+    this.sender = sender;
     this.message = message;
   }
 
