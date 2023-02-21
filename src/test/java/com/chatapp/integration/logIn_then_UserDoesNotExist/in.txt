@@ -1,0 +1,5 @@
+connect localhost
+login a
+
+quit
+** These last few commands clean the server for the next test **

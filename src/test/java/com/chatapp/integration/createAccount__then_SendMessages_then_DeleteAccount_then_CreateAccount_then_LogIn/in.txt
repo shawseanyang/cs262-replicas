@@ -1,0 +1,14 @@
+connect localhost
+create_account a
+create_account b
+login a
+send b will be deleted message
+delete_account b
+create_account b
+login b
+
+logout
+delete_account a
+delete_account b
+quit
+** These last few commands clean the server for the next test **

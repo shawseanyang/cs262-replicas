@@ -1,0 +1,6 @@
+connect localhost
+create_account a
+send a message should not be sent without log in.
+
+quit
+** These last few commands clean the server for the next test **

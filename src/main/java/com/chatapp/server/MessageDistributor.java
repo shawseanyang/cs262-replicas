@@ -5,8 +5,6 @@ import java.util.logging.Logger;
 
 import com.chatapp.Chat.ChatMessage;
 
-import io.grpc.stub.StreamObserver;
-
 /**
  * Creates a thread that distributes messages to the client its responsible for
  * by entering a infinite loop that waits for messages to be added to the

@@ -1,0 +1,2 @@
+-> User already exists.
+com.chatapp.client.exceptions.UserAlreadyExistsException: The username a is already taken.

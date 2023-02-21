@@ -1,0 +1,7 @@
+connect localhost
+create_account a
+list_accounts a
+delete_account a
+list_accounts a
+quit
+** These last few commands clean the server for the next test **

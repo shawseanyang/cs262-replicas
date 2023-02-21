@@ -1,0 +1,8 @@
+connect localhost
+create_account a
+login a
+send b this user doesn't exist
+
+delete_account a
+quit
+** These last few commands clean the server for the next test **

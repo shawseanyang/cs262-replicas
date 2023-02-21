@@ -1,0 +1,4 @@
+Feb 20, 2023 9:17:17 PM com.chatapp.server.ChatServer start
+INFO: Server started, listening on 8000
+Feb 20, 2023 9:18:08 PM com.chatapp.server.ChatServer$ChatServiceImpl$1 onNext
+INFO: Created account for a

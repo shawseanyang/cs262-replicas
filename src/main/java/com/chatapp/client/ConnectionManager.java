@@ -2,7 +2,6 @@ package com.chatapp.client;
 
 import com.chatapp.Chat.ChatMessage;
 import com.chatapp.Chat.CreateAccountRequest;
-import com.chatapp.Chat.CreateAccountResponse;
 import com.chatapp.Chat.DeleteAccountRequest;
 import com.chatapp.Chat.ListAccountsRequest;
 import com.chatapp.Chat.LogInRequest;

@@ -4,23 +4,14 @@ import java.util.Scanner;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import com.chatapp.Chat.ChatMessage;
 import com.chatapp.ChatServiceGrpc;
 import com.chatapp.ChatServiceGrpc.ChatServiceStub;
 import com.chatapp.client.commands.Command;
 import com.chatapp.client.commands.ConnectCommand;
-import com.chatapp.client.commands.CreateAccountCommand;
-import com.chatapp.client.commands.DeleteAccountCommand;
-import com.chatapp.client.commands.ListAccountsCommand;
-import com.chatapp.client.commands.LogInCommand;
-import com.chatapp.client.commands.LogOutCommand;
-import com.chatapp.client.commands.SendMessageCommand;
 import com.chatapp.protocol.Constant;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import io.grpc.Status;
-import io.grpc.stub.StreamObserver;
 
 // Entry point of the client application. Listens for user commands from the console and executes them.
 

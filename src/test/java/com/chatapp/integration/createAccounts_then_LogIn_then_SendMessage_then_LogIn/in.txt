@@ -1,0 +1,11 @@
+connect localhost
+create_account a
+create_account b
+login a
+send b Undelivered message
+login b
+
+delete_account a
+delete_account b
+quit
+** These last few commands clean the server for the next test **
