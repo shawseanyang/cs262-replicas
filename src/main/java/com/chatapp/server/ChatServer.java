@@ -1,21 +1,10 @@
 package com.chatapp.server;
 
 import io.grpc.Server;
-import io.grpc.stub.StreamObserver;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Optional;
-import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import io.grpc.ServerBuilder;
-import com.chatapp.ChatServiceGrpc;
-import com.chatapp.Chat.ChatMessage;
 import com.chatapp.protocol.Constant;
 
 /**
