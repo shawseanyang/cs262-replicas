@@ -10,10 +10,12 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.NoSuchElementException;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.Assert;
 
 import com.chatapp.client.Client;
 import com.chatapp.server.ChatServer;
@@ -332,7 +334,11 @@ public class IntegrationTests {
         }
 
         // run client
-        Client.main(new String[0]);
+        try {
+            Client.main(new String[0]);
+        } catch (NoSuchElementException e) {
+            // ignore when Scanner.in throws a NoSuchElementException because it does so when it reaches the end of the input, however this is simply because the input used for integration testing is not infinite, whereas the actual command line is
+        }
 
         // check if actual output has the same contents as expected output
         compareFiles(expectedOutputFile, actualOutputFile);
@@ -381,9 +387,13 @@ public class IntegrationTests {
                     assertTrue(false);
                 } else if (expectedLine != null && actualLine == null) {
                     assertTrue(false);
-                } else if (!expectedLine.equals(actualLine)) {
-                    assertTrue(false);
+                } else {
+                    Assert.assertEquals(expectedLine, actualLine);
                 }
+
+                // write the above assertions but using Junit's assertEquals
+
+                
 
                 expectedLine = expectedReader.readLine();
                 actualLine = actualReader.readLine();
