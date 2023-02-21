@@ -15,11 +15,16 @@ import com.chatapp.protocol.Constant;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
-// Entry point of the client application. Listens for user commands from the console and executes them.
+// Entry point of the client application. Listens for user commands from the console and adds it to its queue of pending commands. It exposes a method for the ConnectionManager to get the next command from the queue.
 
 public class Client {
+  // Scanner for reading user input from the console
   static Scanner in = new Scanner(System.in);
+
+  // The gRPC stub that is used to communicate with the server
   static ChatServiceStub stub;
+
+  // A queue of pending commands that are waiting to be executed
   static BlockingQueue<Command> pendingCommands = new LinkedBlockingQueue<Command>();
 
   /**

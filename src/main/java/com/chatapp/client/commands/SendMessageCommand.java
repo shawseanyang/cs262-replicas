@@ -1,5 +1,7 @@
 package com.chatapp.client.commands;
 
+// A class that represents a command to send a message to a user
+
 public class SendMessageCommand implements Command {
   private String recipient;
   private String message;

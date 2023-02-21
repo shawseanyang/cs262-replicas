@@ -1,5 +1,7 @@
 package com.chatapp.client.commands;
 
+// A class that represents a command to delete an account
+
 public class DeleteAccountCommand implements Command {
   private String username;
 

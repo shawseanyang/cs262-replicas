@@ -1,7 +1,3 @@
--> Connecting to server.
--> Error: Unknown command: 
--> Error: Unknown command: quit
--> Connected to server.
--> Error: Unknown command: **
--> Account created for a
--> Deleted account named a
+-> Error: Unknown command: a
+-> Error: You must connect to a server first.
+-> Error: You must connect to a server first.

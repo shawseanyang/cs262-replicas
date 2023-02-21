@@ -13,6 +13,11 @@ import com.chatapp.Chat.SendMessageResponse;
 import com.google.rpc.Code;
 import com.google.rpc.Status;
 
+/**
+ * A class that contains static methods that generate ChatMessages for various 
+ * server responses.
+ */
+
 public class ChatMessageGenerator {
   public static ChatMessage CREATE_ACCOUNT_SUCCESS(String username) {
     return ChatMessage.newBuilder()

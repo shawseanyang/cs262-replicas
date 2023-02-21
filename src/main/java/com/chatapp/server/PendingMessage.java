@@ -1,6 +1,8 @@
 package com.chatapp.server;
 
-// Represents a message that is waiting to be sent to a client
+/**
+ * Represents a message that is waiting to be sent to a client
+*/
 
 public class PendingMessage {
   private String recipient;

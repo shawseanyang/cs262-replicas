@@ -1,5 +1,7 @@
 package com.chatapp.client.commands;
 
+// A class that represents a command to log in to the server
+
 public class LogInCommand implements Command {
   private String username;
 

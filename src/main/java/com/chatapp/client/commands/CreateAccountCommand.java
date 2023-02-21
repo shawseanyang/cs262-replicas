@@ -1,5 +1,7 @@
 package com.chatapp.client.commands;
 
+// A class that represents a command to create an account
+
 public class CreateAccountCommand implements Command {
   private String username;
 

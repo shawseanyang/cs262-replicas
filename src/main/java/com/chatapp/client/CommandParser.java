@@ -19,6 +19,7 @@ import com.chatapp.client.commands.SendMessageCommand;
  */
 public class CommandParser {
 
+  // A set of commands that will quit the client
   static final HashSet<String> quitCommands = new HashSet<String>() {{
     add("e");
     add("exit");
@@ -27,17 +28,27 @@ public class CommandParser {
   }};
 
   public static Command parse(String command) throws IllegalArgumentException {
+    // If the command is empty, return an empty command
     if (command.isEmpty()) {
       return new EmptyCommand();
     }
+
+    // Otherwise try parsing
     try {
+      // Split the command into parts
       String[] parts = command.split(" ");
       String commandName = parts[0];
       String[] args = new String[parts.length - 1];
+
+      // The rest of the parts are the arguments
       System.arraycopy(parts, 1, args, 0, args.length);
+
+      // Check for quit commands
       if (quitCommands.contains(commandName)) {
         return new QuitCommand();
       }
+
+      // Parse the rest of the command types based on the provided name, constructing and returning the proper command object using the given arguments
       switch (commandName) {
         case "connect":
           return new ConnectCommand(args[0]);
@@ -52,7 +63,7 @@ public class CommandParser {
         case "delete_account":
           return new DeleteAccountCommand(args[0]);
         case "send":
-          // Recombine the message
+          // Recombine the message that got split
           StringBuilder message = new StringBuilder();
           for (int i = 1; i < args.length; i++) {
             message.append(args[i]);
@@ -61,6 +72,8 @@ public class CommandParser {
             }
           }
           return new SendMessageCommand(args[0], message.toString());
+
+        // If the command name is not recognized, throw an exception
         default:
           throw new IllegalArgumentException("Unknown command: " + commandName);
       }

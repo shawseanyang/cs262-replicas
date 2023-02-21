@@ -16,8 +16,10 @@ public class MessageDistributor extends Thread {
 
   private static final Logger logger = Logger.getLogger(MessageDistributor.class.getName());
 
+  // This is used to stop the thread -- the infinite loop will end itself when this is set to false via the cease() method
   AtomicBoolean running = new AtomicBoolean(true);
 
+  // The username of the user this MessageDistributor is responsible for and the observer used to send messages to the client provided by gRPC
   String username;
   ConcurrentStreamObserver<ChatMessage> observer;
 
@@ -44,12 +46,12 @@ public class MessageDistributor extends Thread {
    */
   public void run() {
     while(running.get()) {
-      // wait for a message to be added to the queue
-      PendingMessage message = ChatServer.getNextMessageFor(username);
+      // wait for a message to be added to the queue (blocking)
+      PendingMessage message = BusinessLogicServer.getNextMessageFor(username);
 
       // double check again that this MessageDistributor should be running; if it shouldn't, then put the message back and end the thread
       if (!running.get()) {
-        ChatServer.putMessageBackToDeliverLater(this.username, message);
+        BusinessLogicServer.putMessageBackToDeliverLater(this.username, message);
         return;
       }
 
@@ -65,9 +67,9 @@ public class MessageDistributor extends Thread {
       //     user to represent. This means that automatic message delivery will
       //     be paused until the user logs back in and a MessageDistributor is 
       //     started for them again.
-      if (!ChatServer.isLoggedIn(this.username)) {
+      if (!BusinessLogicServer.isLoggedIn(this.username)) {
         logger.info("User " + this.username + " is not logged in, so its MessageDistributor thread will end itself.");
-        ChatServer.putMessageBackToDeliverLater(this.username, message);
+        BusinessLogicServer.putMessageBackToDeliverLater(this.username, message);
         return;
       }
 
