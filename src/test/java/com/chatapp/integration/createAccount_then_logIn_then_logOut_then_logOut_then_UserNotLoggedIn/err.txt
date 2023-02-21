@@ -1,2 +1,0 @@
--> You are not logged in.
-com.chatapp.client.exceptions.NotLoggedInException: You are not logged in.

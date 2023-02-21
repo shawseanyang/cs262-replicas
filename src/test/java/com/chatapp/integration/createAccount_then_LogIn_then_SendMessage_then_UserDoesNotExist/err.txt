@@ -1,2 +1,0 @@
--> User does not exist.
-com.chatapp.client.exceptions.UserDoesNotExistException: The username b does not exist.
