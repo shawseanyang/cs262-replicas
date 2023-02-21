@@ -8,6 +8,8 @@ import com.chatapp.ChatServiceGrpc;
 import com.chatapp.ChatServiceGrpc.ChatServiceStub;
 import com.chatapp.client.commands.Command;
 import com.chatapp.client.commands.ConnectCommand;
+import com.chatapp.client.commands.EmptyCommand;
+import com.chatapp.client.commands.QuitCommand;
 import com.chatapp.protocol.Constant;
 
 import io.grpc.ManagedChannel;
@@ -32,6 +34,16 @@ public class Client {
         command = CommandParser.parse(in.nextLine());
       } catch (IllegalArgumentException e) {
         System.out.println("-> Error: " + e.getMessage());
+        continue;
+      }
+
+      // Check for exit command
+      if (command instanceof QuitCommand) {
+        return;
+      }
+
+      // Skip empty commands
+      if (command instanceof EmptyCommand) {
         continue;
       }
 
