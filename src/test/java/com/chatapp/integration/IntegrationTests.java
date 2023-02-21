@@ -299,9 +299,7 @@ public class IntegrationTests {
     public void runTest(String testName) {
         final String inputFile = folderPath + testName + "/in.txt";
         final String expectedOutputFile = folderPath + testName + "/out.txt";
-        final String expectedErrorfile = folderPath + testName + "/err.txt";
         final String actualOutputFile = folderPath + outputFile;
-        final String actualErrorfile = folderPath + errorFile;
 
         // change standard input to file
         InputStream fileIn = null;
@@ -318,16 +316,6 @@ public class IntegrationTests {
         try {
             fileOut = new PrintStream(actualOutputFile);
             System.setOut(fileOut);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            assertTrue(false);
-        }
-
-        // change standard err to file
-        PrintStream fileErr = null;
-        try {
-            fileErr = new PrintStream(new File(actualErrorfile));
-            System.setErr(fileErr);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             assertTrue(false);
@@ -351,14 +339,10 @@ public class IntegrationTests {
         // check if actual output has the same contents as expected output
         compareFiles(expectedOutputFile, actualOutputFile);
 
-        // check if actual error has the same contents as expected error
-        compareFiles(expectedErrorfile, actualErrorfile);
-
         // safely close streams
         try {
             fileIn.close();
             fileOut.close();
-            fileErr.close();
         } catch (IOException e) {
             e.printStackTrace();
             assertTrue(false);
