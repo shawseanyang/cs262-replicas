@@ -8,18 +8,21 @@ import com.chatapp.client.commands.Command;
 import com.chatapp.client.commands.ConnectCommand;
 import com.chatapp.client.commands.CreateAccountCommand;
 import com.chatapp.client.commands.DeleteAccountCommand;
+import com.chatapp.client.commands.EmptyCommand;
 import com.chatapp.client.commands.ListAccountsCommand;
 import com.chatapp.client.commands.LogOutCommand;
+import com.chatapp.client.commands.QuitCommand;
 import com.chatapp.client.commands.SendMessageCommand;
 
 public class CommandParserTest {
   @Test
-  public void parse_emptyCommand_ExceptionThrown() {
+  public void parse_emptyCommand_createsEmptyCommand() {
     
     try {
-      CommandParser.parse("");
+      Command command = CommandParser.parse("");
+      assertTrue(command instanceof EmptyCommand);
     } catch (Exception e) {
-      assertTrue(e instanceof IllegalArgumentException);
+      assertTrue(false);
     }
   }
 
@@ -30,6 +33,17 @@ public class CommandParserTest {
       CommandParser.parse("nonsense");
     } catch (Exception e) {
       assertTrue(e instanceof IllegalArgumentException);
+    }
+  }
+
+  @Test
+  public void parse_QuitCommand_createsQuitCommand() {
+    
+    try {
+      Command command = CommandParser.parse("quit");
+      assertTrue(command instanceof QuitCommand);
+    } catch (Exception e) {
+      assertTrue(false);
     }
   }
 
