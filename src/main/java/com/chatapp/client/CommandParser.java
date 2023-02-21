@@ -9,10 +9,10 @@ import com.chatapp.client.commands.LogInCommand;
 import com.chatapp.client.commands.LogOutCommand;
 import com.chatapp.client.commands.SendMessageCommand;
 
-// Parses a single string representing a commandline command into a Command object
-
-// syntax: <command> <arg1> <arg2> ...
-
+/*
+ * Parses a single string representing a commandline command into a Command object
+ * syntax: <command> <arg1> <arg2> ...
+ */
 public class CommandParser {
   public static Command parse(String command) throws IllegalArgumentException {
     try {
@@ -27,14 +27,22 @@ public class CommandParser {
           return new CreateAccountCommand(args[0]);
         case "list_accounts":
           return new ListAccountsCommand(args[0]);
-        case "log_out":
+        case "logout":
           return new LogOutCommand();
-        case "log_in":
+        case "login":
           return new LogInCommand(args[0]);
         case "delete_account":
           return new DeleteAccountCommand(args[0]);
         case "send":
-          return new SendMessageCommand(args[0], args[1]);
+          // Recombine the message
+          StringBuilder message = new StringBuilder();
+          for (int i = 1; i < args.length; i++) {
+            message.append(args[i]);
+            if (i != args.length - 1) {
+              message.append(" ");
+            }
+          }
+          return new SendMessageCommand(args[0], message.toString());
         default:
           throw new IllegalArgumentException("Unknown command: " + commandName);
       }
