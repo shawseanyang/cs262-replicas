@@ -2,7 +2,7 @@
 
 ## Getting started
 1. Install Maven, one of the Java build systems. On Mac, use homebrew: `brew install maven`.
-> The `pom.xml` file defines the Maven dependencies, which includes the gRPC library along with JUnit for unit/integration testing. Make sure Maven is installed by running `mvn -v`.
+> The `pom.xml` file in the project defines the Maven dependencies, which includes the gRPC library along with JUnit for unit/integration testing. Make sure Maven is installed by running `mvn -v`.
 2. Clone this repository: `git clone`
 3. Navigate to the root folder
 4. Download the dependencies: `mvn clean install`
