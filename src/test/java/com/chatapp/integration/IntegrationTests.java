@@ -391,10 +391,6 @@ public class IntegrationTests {
                     Assert.assertEquals(expectedLine, actualLine);
                 }
 
-                // write the above assertions but using Junit's assertEquals
-
-                
-
                 expectedLine = expectedReader.readLine();
                 actualLine = actualReader.readLine();
             }
