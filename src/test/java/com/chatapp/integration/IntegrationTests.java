@@ -340,6 +340,14 @@ public class IntegrationTests {
             // ignore when Scanner.in throws a NoSuchElementException because it does so when it reaches the end of the input, however this is simply because the input used for integration testing is not infinite, whereas the actual command line is
         }
 
+        // Wait for 2 seconds to allow server to respond
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            assertTrue(false);
+        }
+
         // check if actual output has the same contents as expected output
         compareFiles(expectedOutputFile, actualOutputFile);
 
