@@ -1,0 +1,13 @@
+-> Connecting to server.
+-> Connected to server.
+-> Account created for a
+-> Account created for b
+-> Logged in as a
+-> Queued message from a for b!
+-> Deleted account named b
+-> Account created for b
+-> Logged out a
+-> Logged in as b
+-> Logged out b
+-> Deleted account named a
+-> Deleted account named b

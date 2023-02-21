@@ -1,0 +1,5 @@
+-> Connecting to server.
+-> Connected to server.
+-> Account created for a
+-> Logged in as a
+-> Deleted account named a

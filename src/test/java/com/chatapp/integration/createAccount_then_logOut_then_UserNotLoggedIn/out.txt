@@ -1,0 +1,4 @@
+-> Connecting to server.
+-> Connected to server.
+-> Account created for a
+-> Error: Cannot log out because you are not logged in

@@ -1,0 +1,5 @@
+-> Connecting to server.
+-> Connected to server.
+-> Account created for a
+-> Deleted account named a
+-> Error: Cannot delete account because the user a does not exist

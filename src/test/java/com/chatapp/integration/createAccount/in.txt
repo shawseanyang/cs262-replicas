@@ -3,4 +3,3 @@ create_account a
 
 delete_account a
 quit
-** These last few commands clean the server for the next test **

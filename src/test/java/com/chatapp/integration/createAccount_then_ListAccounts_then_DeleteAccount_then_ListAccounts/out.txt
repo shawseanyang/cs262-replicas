@@ -1,1 +1,9 @@
+-> Connecting to server.
+-> Connected to server.
+-> Account created for a
+*** Accounts ***
 a
+****************
+-> Deleted account named a
+*** Accounts ***
+****************

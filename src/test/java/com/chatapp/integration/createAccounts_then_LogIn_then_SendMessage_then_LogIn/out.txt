@@ -1,1 +1,11 @@
-a: Undelivered message
+-> Connecting to server.
+-> Connected to server.
+-> Account created for a
+-> Account created for b
+-> Logged in as a
+-> Queued message from a for b!
+-> Logged out a
+-> Logged in as b
+[a]: Undelivered message
+-> Deleted account named a
+-> Deleted account named b

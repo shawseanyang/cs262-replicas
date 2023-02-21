@@ -1,0 +1,3 @@
+-> Connecting to server.
+-> Connected to server.
+-> Error: Cannot log in because the user a does not exist

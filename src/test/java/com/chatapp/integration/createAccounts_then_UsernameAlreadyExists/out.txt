@@ -1,0 +1,5 @@
+-> Connecting to server.
+-> Connected to server.
+-> Account created for a
+-> Error: The username a is already taken
+-> Deleted account named a

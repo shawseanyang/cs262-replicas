@@ -1,1 +1,8 @@
-a: message
+-> Connecting to server.
+-> Connected to server.
+-> Account created for a
+-> Logged in as a
+-> Queued message from a for a!
+[a]: message
+-> Logged out a
+-> Deleted account named a

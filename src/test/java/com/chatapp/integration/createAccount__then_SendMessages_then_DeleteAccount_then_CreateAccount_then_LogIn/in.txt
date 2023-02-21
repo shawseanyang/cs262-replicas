@@ -11,4 +11,3 @@ logout
 delete_account a
 delete_account b
 quit
-** These last few commands clean the server for the next test **

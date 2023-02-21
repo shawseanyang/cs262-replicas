@@ -1,0 +1,6 @@
+-> Connecting to server.
+-> Connected to server.
+-> Account created for a
+-> Logged in as a
+-> Error: Cannot send message to b because that user does not exist
+-> Deleted account named a

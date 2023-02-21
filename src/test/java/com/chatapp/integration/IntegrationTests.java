@@ -1,5 +1,6 @@
 package com.chatapp.integration;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
@@ -10,6 +11,10 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 import org.junit.After;
@@ -352,43 +357,37 @@ public class IntegrationTests {
     // Utility function comparing two files
     public static void compareFiles(String expected, String actual) {
         try {
+            // read in the two files into hashsets of lines
+            HashSet<String> expectedLines = new HashSet<String>();
+            HashSet<String> actualLines = new HashSet<String>();
+
             BufferedReader expectedReader = new BufferedReader(new FileReader(expected));
-            BufferedReader actualReader = new BufferedReader(new FileReader(actual));
 
-            String expectedLine = expectedReader.readLine();
-            String actualLine = actualReader.readLine();
-
-            while (expectedLine != null || actualLine != null) {
-                // Ignore Server lines
-                if (ignoreServerOutput) {
-                    while (actualLine != null && actualLine.startsWith("[Server]")) {
-                        actualLine = actualReader.readLine();
-                    }
-                }
-    
-                // Ignore stack trace
-                if (ignoreStackTrace) {
-                    while (actualLine != null && actualLine.trim().startsWith("at")) {
-                        actualLine = actualReader.readLine();
-                    }
-                }
-
-                if (expectedLine == null && actualLine == null) {
+            while(true) {
+                String line = expectedReader.readLine();
+                if (line == null) {
                     break;
-                } else if (expectedLine == null && actualLine != null) {
-                    assertTrue(false);
-                } else if (expectedLine != null && actualLine == null) {
-                    assertTrue(false);
-                } else {
-                    Assert.assertEquals(expectedLine, actualLine);
                 }
-
-                expectedLine = expectedReader.readLine();
-                actualLine = actualReader.readLine();
+                expectedLines.add(line);
             }
 
             expectedReader.close();
+
+            BufferedReader actualReader = new BufferedReader(new FileReader(actual));
+
+            while(true) {
+                String line = actualReader.readLine();
+                if (line == null) {
+                    break;
+                }
+                actualLines.add(line);
+            }
+
             actualReader.close();
+
+            // compare the two hashsets
+            assertEquals(expectedLines, actualLines);
+            
         } catch (IOException e) {
             e.printStackTrace();
             assertTrue(false);

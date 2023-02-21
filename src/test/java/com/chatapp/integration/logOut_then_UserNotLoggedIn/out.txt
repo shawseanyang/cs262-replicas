@@ -1,0 +1,3 @@
+-> Connecting to server.
+-> Connected to server.
+-> Error: Cannot log out because you are not logged in

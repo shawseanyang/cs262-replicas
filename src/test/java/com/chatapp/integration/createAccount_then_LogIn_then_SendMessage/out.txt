@@ -1,1 +1,7 @@
-a: deliver on demand
+-> Connecting to server.
+-> Connected to server.
+-> Account created for a
+-> Logged in as a
+[a]: deliver on demand
+-> Queued message from a for a!
+-> Deleted account named a
