@@ -55,9 +55,8 @@ message ListAccountsRequest {
   string pattern = 1;
 }
 
-// The server responds with a status and (if status is OK), a list of account usernames
+// The server responds with a list of matching account usernames
 message ListAccountsResponse {
-  google.rpc.Status status = 1;
   repeated string accounts = 2;
 }
 

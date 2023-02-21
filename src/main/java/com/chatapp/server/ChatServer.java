@@ -3,6 +3,7 @@ package com.chatapp.server;
 import io.grpc.Server;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.concurrent.BlockingDeque;
@@ -11,6 +12,9 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import io.grpc.ServerBuilder;
 import com.chatapp.ChatServiceGrpc;
 import com.chatapp.Chat.ChatMessage;
@@ -122,12 +126,20 @@ public class ChatServer {
   }
 
   /**
+   * Return whether a user exists
+   * @param username
+   */
+  public static boolean doesUserExists(String username) {
+    return messageDistributors.containsKey(username);
+  }
+
+  /**
    * Return whether a user is logged in
    * @param username
    */
   public static boolean isLoggedIn(String username) {
     return 
-      messageDistributors.containsKey(username) &&
+    doesUserExists(username) &&
       !messageDistributors.get(username).equals(EMPTY_MESSAGE_DISTRIBUTOR);
   }
 
@@ -161,8 +173,43 @@ public class ChatServer {
          */
         ConcurrentStreamObserver<ChatMessage> cResponseObserver = new ConcurrentStreamObserver<ChatMessage>(responseObserver);
 
+        /**
+         * Logs out the user that this ResponseObserver is responsible for
+         * Does not check for invariants that are required for logging out. 
+         * Simply performs the actions required to log a user out.
+         * Thus, callers should check invariants before calling this method 
+         * such as whether the user is even logged in.
+         */
+        private void logOut() {
+          // store the username in a local variable so we can use it after we null out this.username
+          String username = this.username;
+
+          // stop the MessageDistributor and remove it for the user if it exists
+          if (doesUserExists(username)
+            && messageDistributors.get(username).isPresent()) {
+            messageDistributors.get(username).get().cease();
+            messageDistributors.put(username, EMPTY_MESSAGE_DISTRIBUTOR);
+          }
+
+          // and this ResponseObserver no longer represents them
+          this.username = null;
+
+          // respond with a success message
+          cResponseObserver.onNext(
+              ChatMessageGenerator.LOG_OUT_SUCCESS(username));
+          
+          logger.info("Logged out " + username);
+        }
+
         @Override
         public void onNext(ChatMessage message) {
+          // If this ResponseObserver is currently responsible for a user, check if the user still exists (in case they got deleted). If deleted, then log them out
+          if (this.username != null && !messageDistributors.containsKey(username)) {
+            logger.info("User " + username + " was deleted. Logging them out.");
+            logOut();
+            return;
+          }
+
           // handle the message based on what type ("case") it is
           switch (message.getMessageCase()) {
             case CREATE_ACCOUNT_REQUEST: {
@@ -205,16 +252,9 @@ public class ChatServer {
               messageDistributors.put(username, Optional.of(md));
               md.start();
 
-              // if this ResponseObserver was previously representing another user, log that user out first
+              // if this ResponseObserver was previously representing another user that still exists, log that user out first
               if (this.username != null) {
-                // stop the MessageDistributor for the previous user
-                messageDistributors.get(this.username).get().cease();
-                // then remove the MessageDistributor, marking the user as logged out
-                messageDistributors.put(username, EMPTY_MESSAGE_DISTRIBUTOR);
-                logger.info("Logged out " + this.username);
-                // notify the client that the previous user has been logged out
-                cResponseObserver.onNext(
-                    ChatMessageGenerator.LOG_OUT_SUCCESS(this.username));
+                logOut();
               }
 
               // mark this ResponseObserver as representing the user
@@ -227,30 +267,15 @@ public class ChatServer {
               break;
             }
             case LOG_OUT_REQUEST: {
-              // respond with an exception if the client represented by this ResponseObserver is not logged in
-              if (this.username == null) {
+              // respond with an exception if the client represented by this ResponseObserver is not logged in or if the account no longer exists
+              if (this.username == null || !messageDistributors.containsKey(this.username)) {
                 logger.info("Failed to log out because the user is not logged in");
                 cResponseObserver.onNext(
                     ChatMessageGenerator.LOG_OUT_USER_NOT_LOGGED_IN(
                         this.username));
                 return;
               } else {
-                // store the username in a local variable so we can use it after we null out this.username
-                String username = this.username;
-
-                // stop the MessageDistributor for the previous user
-                messageDistributors.get(this.username).get().cease();
-                // then remove the MessageDistributor, marking the user as logged out
-                messageDistributors.put(username, EMPTY_MESSAGE_DISTRIBUTOR);
-
-                // and this ResponseObserver no longer represents them
-                this.username = null;
-
-                // respond with a success message
-                cResponseObserver.onNext(
-                    ChatMessageGenerator.LOG_OUT_SUCCESS(username));
-                
-                logger.info("Logged out " + username);
+                logOut();
               }
               break;
             }
@@ -294,16 +319,63 @@ public class ChatServer {
               break;
             }
             case LIST_ACCOUNTS_REQUEST: {
-              // TODO
-              ListAccountsRequest request = message.getListAccountsRequest();
+              String regexString = message.getListAccountsRequest().getPattern();
+
+              // Make * match any number of characters
+              regexString = regexString.replaceAll("\\*", ".*");
+
+              // Ensure the regex is anchored
+              regexString = '^' + regexString + '$';
+
+              Pattern regex = Pattern.compile(regexString);
+
+              // Compare the query to the list of users
+              ArrayList<String> matchedUsers = new ArrayList<String>();
+              for(String e : messageDistributors.keySet()) {
+                  Matcher matcher = regex.matcher(e);
+
+                  // If the regex matches the username, add the username
+                  if (matcher.find()) {
+                      matchedUsers.add(e);
+                  }
+              }
+
+              // Send a message with the list of users
+              cResponseObserver.onNext(
+                  ChatMessageGenerator.LIST_ACCOUNTS(matchedUsers));
               break;
             }
             case DELETE_ACCOUNT_REQUEST: {
-              // TODO
-              DeleteAccountRequest request = message.getDeleteAccountRequest();
+              String username = message.getDeleteAccountRequest().getUsername();
+
+              // respond with an exception if the account does not exist
+              if (!messageDistributors.containsKey(username)) {
+                logger.info(
+                    "Failed to delete account " + username + " because the username does not exist");
+                cResponseObserver.onNext(
+                    ChatMessageGenerator
+                        .DELETE_ACCOUNT_USER_DOES_NOT_EXIST(username));
+                return;
+              }
+
+              // delete the account by
+              // (1) stopping the MessageDistributor for the user if it exists
+              if (messageDistributors.get(username).isPresent()) {
+                messageDistributors.get(username).get().cease();
+              }
+              // (2) deleting the user's entry in the messageDistributors 
+              //     map, marking them as deleted
+              messageDistributors.remove(username);
+              // (3) deleting the user's pending messages
+              pendingMessages.remove(username);
+
+              // respond with a success message
+              cResponseObserver.onNext(
+                  ChatMessageGenerator.DELETE_ACCOUNT_SUCCESS(username));
               break;
             }
             default:
+              // Ignore unknown message types
               break;
           }
         }

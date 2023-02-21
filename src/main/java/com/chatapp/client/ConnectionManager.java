@@ -53,6 +53,18 @@ public class ConnectionManager extends Thread {
               return;
             }
 
+            // if the message is a listing of accounts, then print the accounts for the user to see. Use a StringBuilder so that it can be printed all at once to avoid being interrupted by some other print statement
+            if (message.hasListAccountsResponse()) {
+              StringBuilder sb = new StringBuilder();
+              sb.append("*** Accounts ***");
+              for (String account : message.getListAccountsResponse().getAccountsList()) {
+                sb.append(account + "\n");
+              }
+              sb.append("****************");
+              System.out.println(sb.toString());
+              return;
+            }
+
             // All other messages are "confirmations", where the server is confirming the success of a client's request, simply print the message from the server, adding an "Error:" prefix if the server returned an error code 
             Status status = extractStatus(message);
             if (status == null) {

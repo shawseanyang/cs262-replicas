@@ -1,8 +1,12 @@
 package com.chatapp.server;
 
+import java.util.ArrayList;
+
 import com.chatapp.Chat.ChatMessage;
 import com.chatapp.Chat.CreateAccountResponse;
+import com.chatapp.Chat.DeleteAccountResponse;
 import com.chatapp.Chat.DistributeMessageRequest;
+import com.chatapp.Chat.ListAccountsResponse;
 import com.chatapp.Chat.LogInResponse;
 import com.chatapp.Chat.LogOutResponse;
 import com.chatapp.Chat.SendMessageResponse;
@@ -133,6 +137,39 @@ public class ChatMessageGenerator {
                         .setCode(Code.FAILED_PRECONDITION.getNumber())
                         .setMessage("Cannot send a message because you're not logged in")
                         .build())
+                .build())
+        .build();
+  }
+
+  public static ChatMessage LIST_ACCOUNTS(ArrayList<String> accounts) {
+    return ChatMessage.newBuilder()
+        .setListAccountsResponse(
+            ListAccountsResponse.newBuilder()
+                .addAllAccounts(accounts)
+                .build())
+        .build();
+  }
+
+  public static ChatMessage DELETE_ACCOUNT_USER_DOES_NOT_EXIST(String username) {
+    return ChatMessage.newBuilder()
+        .setDeleteAccountResponse(
+            DeleteAccountResponse.newBuilder()
+                .setStatus(Status.newBuilder()
+                    .setCode(Code.NOT_FOUND.getNumber())
+                    .setMessage("Cannot delete account because the user " + username + " does not exist")
+                    .build())
+                .build())
+        .build();
+  }
+
+  public static ChatMessage DELETE_ACCOUNT_SUCCESS(String username) {
+    return ChatMessage.newBuilder()
+        .setDeleteAccountResponse(
+            DeleteAccountResponse.newBuilder()
+                .setStatus(Status.newBuilder()
+                    .setCode(Code.OK.getNumber())
+                    .setMessage("Deleted account named " + username)
+                    .build())
                 .build())
         .build();
   }
