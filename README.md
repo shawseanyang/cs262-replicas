@@ -65,6 +65,8 @@ send andy Wow I'm surprised that worked!
 ```
 
 # Documentation
+## Engineering Notebook
+The engineering notebook can be found [here](https://docs.google.com/document/d/1cd2ADotJJuukOL3ebo9es9_DIUSupXIdjXFgi5i30cU/edit?usp=sharing).
 ## Protocol
 ### Bidirectional stream
 The chat app is a client-server system that uses a bidirectional gRPC stream to send messages between the client and server. The bidirectional stream sends and recieves protocol buffers of type `Message`. `Message` uses the `oneof` keyword to allow for different types of messages to be sent over the same stream while still allowing gRPC to compress the actual data into small packages.
