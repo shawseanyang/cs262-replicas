@@ -50,6 +50,13 @@ public class ConnectionManager extends Thread {
           // this callback is called when the server sends a message to the client
           @Override
           public void onNext(ChatMessage message) {
+            // if the request was rejected because the server was a follower, then print a message to the user
+            // TODO: this should be automatically handled
+            if (message.hasRejectedByFollower()) {
+              System.out.println("The server is a follower. Please try again.");
+              return;
+            }
+
             // if the message is a message distribution, print the message for the user to see
             if (message.hasDistributeMessageRequest()) {
               // use printf

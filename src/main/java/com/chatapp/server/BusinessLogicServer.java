@@ -10,7 +10,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.chatapp.Chat.ChatMessage;
-import com.chatapp.protocol.Constant;
 import com.chatapp.ChatServiceGrpc;
 
 import io.grpc.Server;
@@ -44,13 +43,16 @@ public class BusinessLogicServer {
    */
   private static ConcurrentHashMap<String, BlockingDeque<PendingMessage>> pendingMessages = new ConcurrentHashMap<String, BlockingDeque<PendingMessage>>();
 
+  private static ReplicaManager replicaManager;
+
   /**
-   * Constructor: create the gRPC server
+   * Constructor
    */
-  public BusinessLogicServer() {
+  public BusinessLogicServer(ReplicaManager r, int port) {
     server = ServerBuilder
-        .forPort(Constant.PORT)
+        .forPort(port)
         .addService(new ChatServiceImpl()).build();
+    replicaManager = r;
   }
 
   /**
@@ -179,6 +181,14 @@ public class BusinessLogicServer {
          */
         @Override
         public void onNext(ChatMessage message) {
+          // If this replica is currently a follower, then reject the request
+          if (replicaManager.isFollower()) {
+            logger.info("Rejecting request because this replica is a follower");
+            cResponseObserver.onNext(
+                ChatMessageGenerator.REJECTED());
+            return;
+          }
+
           // If this ResponseObserver is currently responsible for a user, check if the user still exists (in case they got deleted). If deleted, then log them out
           if (this.username != null && !messageDistributors.containsKey(username)) {
             logger.info("User " + username + " was deleted. Logging them out.");

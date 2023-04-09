@@ -27,6 +27,7 @@ message ChatMessage {
     SendMessageResponse send_message_response = 11;
     LogOutResponse log_out_response = 12;
     DeleteAccountResponse delete_account_response = 13;
+    RejectedByFollower rejected_by_follower = 14;
   }
 }
 
@@ -94,3 +95,6 @@ message DistributeMessageRequest {
   string sender = 1;
   string message = 2;
 }
+
+// This message indicates that the request was rejected because the server that was contacted is a follower and not a leader and only leaders can respond to clients
+message RejectedByFollower {}

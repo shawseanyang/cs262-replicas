@@ -10,7 +10,7 @@ import com.chatapp.client.commands.Command;
 import com.chatapp.client.commands.ConnectCommand;
 import com.chatapp.client.commands.EmptyCommand;
 import com.chatapp.client.commands.QuitCommand;
-import com.chatapp.protocol.Constant;
+import com.chatapp.protocol.Server;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -53,10 +53,10 @@ public class Client {
       }
 
       // when its a connect command, create a new channel, create a stub, then connect to the server using the ConnectionManager, which splits off into a separate thread
+      // TODO: try all hosts
       if (command instanceof ConnectCommand) {
-        ConnectCommand cast = (ConnectCommand) command;
         ManagedChannel channel =
-          ManagedChannelBuilder.forAddress(cast.getHost(), Constant.PORT)
+          ManagedChannelBuilder.forTarget(Server.SERVERS[1].toString())
           .usePlaintext()
           .build();
         stub = ChatServiceGrpc.newStub(channel);

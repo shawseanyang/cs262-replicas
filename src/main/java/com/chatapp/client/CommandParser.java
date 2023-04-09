@@ -51,7 +51,7 @@ public class CommandParser {
       // Parse the rest of the command types based on the provided name, constructing and returning the proper command object using the given arguments
       switch (commandName) {
         case "connect":
-          return new ConnectCommand(args[0]);
+          return new ConnectCommand();
         case "create_account":
           return new CreateAccountCommand(args[0]);
         case "list_accounts":

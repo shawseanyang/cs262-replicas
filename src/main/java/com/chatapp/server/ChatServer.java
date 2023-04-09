@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-import com.chatapp.protocol.Constant;
-
 /**
  * Server that manages startup/shutdown of a {@code Chat} server. This class 
  * manages the lifecycle of a server, whereas the actual business logic is 
@@ -18,18 +16,27 @@ public class ChatServer {
   // The gRPC server object, to be populated by start()
   private Server server;
 
+  private ReplicaManager replicaManager;
+
+  private int port;
+
+  public ChatServer(ReplicaManager replicaManager, int port) {
+    this.replicaManager = replicaManager;
+    this.port = port;
+  }
+
   /**
    * Start serving requests.
    * @throws IOException
    */
   private void start() throws IOException {
     // Start the business logic portion of the server
-    BusinessLogicServer businessLogicServer = new BusinessLogicServer();
+    BusinessLogicServer businessLogicServer = new BusinessLogicServer(replicaManager, port);
 
     // Then grab the gRPC server that it creates
     server = businessLogicServer.getServer();
 
-    logger.info("Server started, listening on " + Constant.PORT);
+    logger.info("Server started, listening on " + port);
 
     // Add a shutdown hook to the JVM so that the server can be shut down gracefully
     Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -81,11 +88,14 @@ public class ChatServer {
     // grab the corresponding replica
     Replica replica = Replica.REPLICAS[replicaNumber];
     // start the Bully algorithm for this replica
-    new Thread(new Bully(replica)).start();
-    // TODO: uncomment
+    ReplicaManager replicaManager = new Bully(replica);
+    Thread t = new Thread(replicaManager);
+    t.start();
+    // grab the port for this replica's business logic server
+    int port = com.chatapp.protocol.Server.SERVERS[replicaNumber].getPort();
     // start the business logic server
-    // final ChatServer server = new ChatServer();
-    // server.start();
-    // server.blockUntilShutdown();
+    final ChatServer server = new ChatServer(replicaManager, port);
+    server.start();
+    server.blockUntilShutdown();
   }
 }

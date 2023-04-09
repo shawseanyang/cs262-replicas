@@ -9,6 +9,7 @@ import com.chatapp.Chat.DistributeMessageRequest;
 import com.chatapp.Chat.ListAccountsResponse;
 import com.chatapp.Chat.LogInResponse;
 import com.chatapp.Chat.LogOutResponse;
+import com.chatapp.Chat.RejectedByFollower;
 import com.chatapp.Chat.SendMessageResponse;
 import com.google.rpc.Code;
 import com.google.rpc.Status;
@@ -176,6 +177,13 @@ public class ChatMessageGenerator {
                     .setMessage("Deleted account named " + username)
                     .build())
                 .build())
+        .build();
+  }
+
+  public static ChatMessage REJECTED() {
+    return ChatMessage.newBuilder()
+        .setRejectedByFollower(
+            RejectedByFollower.newBuilder().build())
         .build();
   }
 }

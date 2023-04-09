@@ -12,10 +12,10 @@ import io.grpc.ServerBuilder;
 import io.grpc.StatusRuntimeException;
 
 /**
- * The Bully algorithm for leader election.
+ * The Bully algorithm for leader election is a way of managing replicas in a replica group.
  */
 
-public class Bully implements Runnable {
+public class Bully implements ReplicaManager {
   /* The identity of this replica. */
   final Replica self;
 
@@ -41,6 +41,13 @@ public class Bully implements Runnable {
   }
 
   /*
+   * Getter for the leader variable.
+   */
+  public Replica getLeader() {
+    return leader;
+  }
+
+  /*
    * Creates the server for this replica.
    */
   private Server createServer() {
@@ -48,6 +55,20 @@ public class Bully implements Runnable {
       .forPort(self.getPortNumber())
       .addService(new BullyServiceImpl())
       .build();
+  }
+
+  /*
+   * Returns whether this replica is the leader.
+   */
+  public boolean isLeader() {
+    return getStatus() == ReplicaStatus.LEADER;
+  }
+
+  /*
+   * Returns whether this replica is a follower.
+   */
+  public boolean isFollower() {
+    return getStatus() == ReplicaStatus.FOLLOWER;
   }
 
   /**
@@ -71,7 +92,7 @@ public class Bully implements Runnable {
     // Enter the client-side loop
     while(true) {
       // If this replica is a leader, do nothing. Otherwise, ping the leader to see if its still alive.
-      if (getReplicaStatus() != ReplicaStatus.LEADER) {
+      if (getStatus() != ReplicaStatus.LEADER) {
         // If the leader is null or if the leader is dead, then elect a new leader.
         if (leader == null || !isAlive(leader)) {
           // Elect a new leader
@@ -96,7 +117,7 @@ public class Bully implements Runnable {
   /*
    * Returns the status of this replica.
    */
-  public ReplicaStatus getReplicaStatus() {
+  public ReplicaStatus getStatus() {
     if (leader == null) {
       return ReplicaStatus.FOLLOWER;
     } else if (leader.equals(self)) {
