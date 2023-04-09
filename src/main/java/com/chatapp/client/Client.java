@@ -21,9 +21,6 @@ public class Client {
   // Scanner for reading user input from the console
   static Scanner in = new Scanner(System.in);
 
-  // The gRPC stub that is used to communicate with the server
-  static ChatServiceStub stub;
-
   // A queue of pending commands that are waiting to be executed
   static BlockingQueue<Command> pendingCommands = new LinkedBlockingQueue<Command>();
 
@@ -52,27 +49,9 @@ public class Client {
         continue;
       }
 
-      // when its a connect command, create a new channel, create a stub, then connect to the server using the ConnectionManager, which splits off into a separate thread
-      // TODO: try all hosts
+      // when its a connect command, create a connection manager, which tries to connect to the server
       if (command instanceof ConnectCommand) {
-        ManagedChannel channel =
-          ManagedChannelBuilder.forTarget(Server.SERVERS[1].toString())
-          .usePlaintext()
-          .build();
-        stub = ChatServiceGrpc.newStub(channel);
-        try {
-          ConnectionManager cm = new ConnectionManager(stub);
-          cm.start(); // new thread
-        } catch (Exception e) {
-          System.out.println("-> Failed to connect: " + e.getMessage());
-        }
-        continue;
-      }
-      
-      // if there is no stub, then the user must connect first
-      if (stub == null) {
-        System.out.println("-> Error: You must connect to a server first.");
-        continue;
+        (new ConnectionManager()).start();
       }
 
       // add the command to the queue of pending commands

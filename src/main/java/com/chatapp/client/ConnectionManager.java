@@ -1,11 +1,13 @@
 package com.chatapp.client;
 
+import com.chatapp.ChatServiceGrpc;
 import com.chatapp.Chat.ChatMessage;
 import com.chatapp.Chat.CreateAccountRequest;
 import com.chatapp.Chat.DeleteAccountRequest;
 import com.chatapp.Chat.ListAccountsRequest;
 import com.chatapp.Chat.LogInRequest;
 import com.chatapp.Chat.LogOutRequest;
+import com.chatapp.Chat.PingRequest;
 import com.chatapp.Chat.SendMessageRequest;
 import com.chatapp.ChatServiceGrpc.ChatServiceStub;
 import com.chatapp.client.commands.Command;
@@ -15,9 +17,12 @@ import com.chatapp.client.commands.ListAccountsCommand;
 import com.chatapp.client.commands.LogInCommand;
 import com.chatapp.client.commands.LogOutCommand;
 import com.chatapp.client.commands.SendMessageCommand;
-
+import com.chatapp.protocol.Server;
 import com.google.rpc.Status;
 import com.google.rpc.Code;
+
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
 
 /**
@@ -25,92 +30,106 @@ import io.grpc.stub.StreamObserver;
 */
 
 public class ConnectionManager extends Thread {
+  
+  ServerManager serverManager;
 
-  // the gRPC stub that is used to communicate with the server
-  ChatServiceStub stub;
+  StreamObserver<ChatMessage> observer;
 
-  // Constructor: takes in the stub that is used to communicate with the server
-  public ConnectionManager(ChatServiceStub stub) {
-    this.stub = stub;
+  ManagedChannel channel;
+
+  // Constructor
+  public ConnectionManager() {
+    serverManager = new ServerManager();
+    observer = createObserverFor(serverManager.getCurrent());
+    // try sending a ping to the server to see if it is alive
+    observer.onNext(ChatMessage.newBuilder().setPingRequest(PingRequest.newBuilder().build()).build());
   }
+
+  private StreamObserver<ChatMessage> createObserverFor(Server server) {
+    // close the previous channel if it exists
+    if (channel != null) {
+      channel.shutdown();
+    }
+    channel = ManagedChannelBuilder.forTarget(server.toString())
+      .usePlaintext()
+      .build();
+    ChatServiceStub stub = ChatServiceGrpc.newStub(channel);
+          
+    return
+      // the callback methods for the "chat" rpc, which is the bidirectional streaming rpc that is used to communicate with the server
+      stub.chat(new StreamObserver<ChatMessage>() {
+
+        // this callback is called when the server sends a message to the client
+        @Override
+        public void onNext(ChatMessage message) {
+          // if the request was rejected because the server was a follower, then print a message to the user
+          // TODO: this should be automatically handled
+          if (message.hasRejectedByFollower()) {
+            System.out.println("-> The server is a follower. Please try again.");
+            return;
+          }
+
+          // if the message is a message distribution, print the message for the user to see
+          if (message.hasDistributeMessageRequest()) {
+            // use printf
+            System.out.printf(
+              "[%s]: %s\n",
+              message.getDistributeMessageRequest().getSender(),
+              message.getDistributeMessageRequest().getMessage()
+            );
+            return;
+          }
+
+          // if the message is a listing of accounts, then print the accounts for the user to see. Use a StringBuilder so that it can be printed all at once to avoid being interrupted by some other print statement
+          if (message.hasListAccountsResponse()) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("*** Accounts ***\n");
+            for (String account : message.getListAccountsResponse().getAccountsList()) {
+              sb.append(account + "\n");
+            }
+            sb.append("****************");
+            System.out.println(sb.toString());
+            return;
+          }
+
+          // All other messages are "confirmations", where the server is confirming the success of a client's request, simply print the message from the server, adding an "Error:" prefix if the server returned an error code 
+          Status status = extractStatus(message);
+          if (status == null) {
+            System.out.println("-> Error parsing server response");
+            return;
+          } else if (status.getCode() != Code.OK_VALUE) {
+            System.out.println("-> Error: " + status.getMessage());
+            return;
+          } else {
+            System.out.println("-> " + status.getMessage());
+          }
+        }
+        
+        // If the server returns an error, it means the connection has been severed, so try connecting to the next server in the list
+        @Override
+        public void onError(Throwable t) {
+          System.out.println("-> Disconnected from server " + serverManager.getCurrent().toString() + ". Trying next server.");
+
+          observer = createObserverFor(serverManager.getNext());
+
+          System.out.println("-> Reconnected to server " + serverManager.getCurrent().toString() + ".");
+        }
+        
+        /**
+         * This callback is called when the gRPC connection closes gracefully.
+         */
+        @Override
+        public void onCompleted() {
+          System.out.println("-> Disconnected from server.");
+        }
+      });
+    }
   
   /**
    * This method is run when the thread is started.
    * Connects to the server, defining the callback handlers in the process, then enters an infinite loop where it pops commands off the queue and executes them. It blocks if the command queue is empty.
    */
   public void run() {
-    System.out.println("-> Connecting to server.");
-
-    // define the callback handlers
-    StreamObserver<ChatMessage> requestObserver =
-
-        // the callback methods for the "chat" rpc, which is the bidirectional streaming rpc that is used to communicate with the server
-        stub.chat(new StreamObserver<ChatMessage>() {
-
-          // this callback is called when the server sends a message to the client
-          @Override
-          public void onNext(ChatMessage message) {
-            // if the request was rejected because the server was a follower, then print a message to the user
-            // TODO: this should be automatically handled
-            if (message.hasRejectedByFollower()) {
-              System.out.println("The server is a follower. Please try again.");
-              return;
-            }
-
-            // if the message is a message distribution, print the message for the user to see
-            if (message.hasDistributeMessageRequest()) {
-              // use printf
-              System.out.printf(
-                "[%s]: %s\n",
-                message.getDistributeMessageRequest().getSender(),
-                message.getDistributeMessageRequest().getMessage()
-              );
-              return;
-            }
-
-            // if the message is a listing of accounts, then print the accounts for the user to see. Use a StringBuilder so that it can be printed all at once to avoid being interrupted by some other print statement
-            if (message.hasListAccountsResponse()) {
-              StringBuilder sb = new StringBuilder();
-              sb.append("*** Accounts ***\n");
-              for (String account : message.getListAccountsResponse().getAccountsList()) {
-                sb.append(account + "\n");
-              }
-              sb.append("****************");
-              System.out.println(sb.toString());
-              return;
-            }
-
-            // All other messages are "confirmations", where the server is confirming the success of a client's request, simply print the message from the server, adding an "Error:" prefix if the server returned an error code 
-            Status status = extractStatus(message);
-            if (status == null) {
-              System.out.println("-> Error parsing server response");
-              return;
-            } else if (status.getCode() != Code.OK_VALUE) {
-              System.out.println("-> Error: " + status.getMessage());
-              return;
-            } else {
-              System.out.println("-> " + status.getMessage());
-            }
-          }
-          
-          // this callback is called when the gRPC connection yields an error to the client. This is fatal, so we print the error and exit the program with status 1.
-          @Override
-          public void onError(Throwable t) {
-            System.err.println("-> Fatal error, disconnected from the server: " + t);
-            System.exit(1);
-          }
-          
-          /**
-           * This callback is called when the gRPC connection closes gracefully.
-           */
-          @Override
-          public void onCompleted() {
-            System.out.println("-> Disconnected from server.");
-          }
-        });
-    
-    System.out.println("-> Connected to server.");
-    
     // enter an infinite loop where we pop commands off the queue and execute them
     while(true) {
       // pop a command off the queue
@@ -132,7 +151,7 @@ public class ConnectionManager extends Thread {
                 .setUsername(cast.getUsername())
                 .build()
             ).build();
-          requestObserver.onNext(message);
+            observer.onNext(message);
         }
 
         // ------------------ DELETE ACCOUNT ------------------
@@ -144,7 +163,7 @@ public class ConnectionManager extends Thread {
                 .setUsername(cast.getUsername())
                 .build()
             ).build();
-          requestObserver.onNext(message);
+            observer.onNext(message);
         }
 
         // ------------------ LIST ACCOUNTS ------------------
@@ -156,7 +175,7 @@ public class ConnectionManager extends Thread {
                 .setPattern(cast.getPattern())
                 .build()
             ).build();
-          requestObserver.onNext(message);
+            observer.onNext(message);
         }
 
         // ------------------ LOG IN ------------------
@@ -168,14 +187,14 @@ public class ConnectionManager extends Thread {
                 .setUsername(cast.getUsername())
                 .build()
             ).build();
-          requestObserver.onNext(message);
+            observer.onNext(message);
         }
 
         // ------------------ LOG OUT ------------------
         else if (command instanceof LogOutCommand) {
           // create a LogOutResponse, which contains nothing
           ChatMessage message = ChatMessage.newBuilder().setLogOutRequest(LogOutRequest.newBuilder().build()).build();
-          requestObserver.onNext(message);
+          observer.onNext(message);
         }
 
         // ------------------ SEND MESSAGE ------------------
@@ -188,7 +207,7 @@ public class ConnectionManager extends Thread {
                 .setMessage(cast.getMessage())
                 .build()
             ).build();
-          requestObserver.onNext(message);
+            observer.onNext(message);
         }
       } catch (Exception e) {
         // if an exception is thrown, print the error message
