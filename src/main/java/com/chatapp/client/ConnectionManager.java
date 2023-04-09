@@ -59,13 +59,24 @@ public class ConnectionManager extends Thread {
       // the callback methods for the "chat" rpc, which is the bidirectional streaming rpc that is used to communicate with the server
       stub.chat(new StreamObserver<ChatMessage>() {
 
+        /**
+         * Try connecting to the next available server
+         */
+        public void reconnectToNextServer() {
+          System.out.println("-> Disconnected from server " + serverManager.getCurrent().toString() + ". Trying next server.");
+
+          observer = createObserverFor(serverManager.getNext());
+
+          System.out.println("-> Reconnected to server " + serverManager.getCurrent().toString() + ".");
+        }
+
         // this callback is called when the server sends a message to the client
         @Override
         public void onNext(ChatMessage message) {
           // if the request was rejected because the server was a follower, then print a message to the user
-          // TODO: this should be automatically handled
           if (message.hasRejectedByFollower()) {
-            System.out.println("-> The server is a follower. Please try again.");
+            System.out.println("-> The server is a follower, reconnecting to another server.");
+            reconnectToNextServer();
             return;
           }
 
@@ -108,11 +119,7 @@ public class ConnectionManager extends Thread {
         // If the server returns an error, it means the connection has been severed, so try connecting to the next server in the list
         @Override
         public void onError(Throwable t) {
-          System.out.println("-> Disconnected from server " + serverManager.getCurrent().toString() + ". Trying next server.");
-
-          observer = createObserverFor(serverManager.getNext());
-
-          System.out.println("-> Reconnected to server " + serverManager.getCurrent().toString() + ".");
+          reconnectToNextServer();
         }
         
         /**
