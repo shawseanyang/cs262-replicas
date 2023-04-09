@@ -73,11 +73,19 @@ public class ChatServer {
   }
 
   /**
-   * Main launches the server from the command line.
+   * Main launches the server from the command line. The first argument specifies which replica this is.
    */
   public static void main(String[] args) throws IOException, InterruptedException {
-    final ChatServer server = new ChatServer();
-    server.start();
-    server.blockUntilShutdown();
+    // parse the first argument as the replica number
+    int replicaNumber = Integer.parseInt(args[0]);
+    // grab the corresponding replica
+    Replica replica = Replica.REPLICAS[replicaNumber];
+    // start the Bully algorithm for this replica
+    new Thread(new Bully(replica)).start();
+    // TODO: uncomment
+    // start the business logic server
+    // final ChatServer server = new ChatServer();
+    // server.start();
+    // server.blockUntilShutdown();
   }
 }

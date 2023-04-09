@@ -19,20 +19,25 @@ public class Bully implements Runnable {
   /* The identity of this replica. */
   final Replica self;
 
-  /* The current leader of the replica group. Starts as no one. */
+  /* The current leader of the replica group. Starts as no one. Should be set using the given setter if console messages are desired. */
   Replica leader = null;
-
-  /* The stubs of the other replicas. */
-  final HashMap<Replica, BullyServiceBlockingStub> stubs;
 
   /* The gRPC server for this replica */
   final Server server;
 
   /* Constructor takes an identity `me` for this replica, initializes the stubs of the other replicas, and sets up the server. */
   public Bully (Replica me) {
+    System.out.println("I am " + me.getId() + ".");
     self = me;
-    stubs = createStubs();
     server = createServer();
+  }
+
+  /*
+   * Setter for the leader variable. Prints a message to the console to indicate the change.
+   */
+  public void setLeader(Replica newLeader) {
+    System.out.println("Leader is now " + newLeader.getId() + ".");
+    leader = newLeader;
   }
 
   /*
@@ -45,17 +50,11 @@ public class Bully implements Runnable {
       .build();
   }
 
-  /*
-   * Creates the stubs to the other replicas.
+  /**
+   * Returns a gRPC stub for the given replica.
    */
-  private HashMap<Replica, BullyServiceBlockingStub> createStubs() {
-    HashMap<Replica, BullyServiceBlockingStub> stubs = new HashMap<>();
-    for (Replica replica : Replica.REPLICAS) {
-      if (replica != self) {
-        stubs.put(replica, BullyServiceGrpc.newBlockingStub(ManagedChannelBuilder.forAddress(replica.getIpAddress(), replica.getPortNumber()).usePlaintext().build()));
-      }
-    }
-    return stubs;
+  public BullyServiceBlockingStub getStubFor(Replica replica) {
+    return BullyServiceGrpc.newBlockingStub(ManagedChannelBuilder.forAddress(replica.getIpAddress(), replica.getPortNumber()).usePlaintext().build());
   }
 
   /*
@@ -76,9 +75,10 @@ public class Bully implements Runnable {
         // If the leader is null or if the leader is dead, then elect a new leader.
         if (leader == null || !isAlive(leader)) {
           // Elect a new leader
-          leader = electLeader();
-          // If this replica has been elected as the leader, then delcare victory
-          if (getReplicaStatus() == ReplicaStatus.LEADER) {
+          Replica candidate = electLeader();
+          // If this replica believes it should be the leader, then become the leader and declare victory to all other replicas.
+          if (candidate.equals(self)) {
+            setLeader(self);
             declareVictory();
           }
         }
@@ -112,13 +112,16 @@ public class Bully implements Runnable {
   private Replica electLeader() {
     // Ping all of the replicas with a higher ID than this replica in order of precedence.
     Replica[] higherUps = Replica.getHigherUps(self);
+    System.out.println("My higher ups are " + Replica.getIdsAsString(higherUps) + ".");
     for (Replica higherUp : higherUps) {
       if (isAlive(higherUp)) {
         // the first higher up that is alive is the leader
+        System.out.println("Elected " + higherUp.getId() + " as the new leader.");
         return higherUp;
       }
     }
     // if there are no higher ups that are alive, then this replica is the leader
+    System.out.println("Elected myself as the new leader.");
     return self;
   }
 
@@ -128,10 +131,12 @@ public class Bully implements Runnable {
   private boolean isAlive(Replica replica) {
     // Try to ping the replica
     try {
-      stubs.get(replica).ping(null);
+      getStubFor(replica).ping(null);
     } catch (StatusRuntimeException e) {
+      System.out.println("Replica " + replica.getId() + " is dead.");
       return false;
     }
+    System.out.println("Replica " + replica.getId() + " is alive.");
     return true;
   }
 
@@ -139,9 +144,10 @@ public class Bully implements Runnable {
    * Declares this replica as the new leader to all other replicas.
    */
   private void declareVictory() {
-    for (Replica replica : Replica.REPLICAS) {
+    System.out.println("I am the new leader!");
+    for (Replica replica : Replica.getOthers(self)) {
       try {
-        stubs.get(replica).declareVictory(convertSelfToProto());
+        getStubFor(replica).declareVictory(convertSelfToProto());
       } catch (StatusRuntimeException e) {
         // ignore
       }
@@ -173,7 +179,7 @@ public class Bully implements Runnable {
      */
     @Override
     public void declareVictory(com.chatapp.Bully.Replica request, io.grpc.stub.StreamObserver<Empty> responseObserver) {
-      leader = Replica.getReplicaById(request.getId());
+      setLeader(Replica.getReplicaById(request.getId()));
       responseObserver.onNext(Empty.newBuilder().build());
       responseObserver.onCompleted();
     }
