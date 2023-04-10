@@ -108,6 +108,8 @@ The server is designed to be replicated. Each replica is a separate instance of 
 
 The key functionality of replication is outlined by the `ReplicaManager` interface, which is implemented here by `Bully`, an implementation of the popular Bully algorithm. The replica manager is responsible for electing a leader replica and ensuring that all replicas are up-to-date with who is the leader.
 
+The Bully algorithm was chosen because the project specs required that the system be crash and failstop failure tolerant, but not network tolerant. The bully algorithm is a leader election algorithm that is crash and failstop tolerant, but not network tolerant. It is also simpler to implement and understand, compared to other leader election algorithms like Paxos or Raft. Simple is always better.
+
 `BusinessLogicServer` takes in a replica manager and uses that to alter its behavior depending on whether the replica manager says its supposed to be a leader or a follower. Leaders talk directly with the client and forward all messages to followers so that the followers can, well, follow. Leaders perform forward messages by using a `RelayGroup` containing `Relay`s to all the other replicas.
 
 If a client tries to talk to a follower, the follower will reject the client.
