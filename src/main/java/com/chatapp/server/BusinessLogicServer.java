@@ -11,6 +11,8 @@ import java.util.regex.Pattern;
 
 import com.chatapp.Chat.ChatMessage;
 import com.chatapp.protocol.Constant;
+import com.chatapp.server.Persistence.AccountSerializer;
+import com.chatapp.server.Persistence.MessageSerializer;
 import com.chatapp.ChatServiceGrpc;
 
 import io.grpc.Server;
@@ -53,6 +55,31 @@ public class BusinessLogicServer {
         .addService(new ChatServiceImpl()).build();
   }
 
+  /*
+   * Load the accounts and messages from the message file
+   * @param pastAccounts the list of accounts to load
+   * @param pastMessages the list of messages to load
+   */
+  public void loadFiles(ArrayList<String> pastAccounts, ArrayList<PendingMessage> pastMessages) {
+    // Load the accounts from the account file
+    for (String account : pastAccounts) {
+      // mark the user as created but not logged in yet
+      messageDistributors.put(account, EMPTY_MESSAGE_DISTRIBUTOR);
+      // create a queue for the user
+      pendingMessages.put(account, new LinkedBlockingDeque<PendingMessage>());
+    }
+
+    // Load the messages from the message file
+    for (PendingMessage message : pastMessages) {
+      try {
+        pendingMessages.get(message.getRecipient()).put(message);
+      } catch (InterruptedException e) {
+        System.out.println("ERROR: The message file contains users that do not exist.");
+        e.printStackTrace();
+      }
+    }
+  }
+
   /**
    * Get the gRPC server object
    * @return
@@ -85,6 +112,7 @@ public class BusinessLogicServer {
     while(true) {
       try {
         pendingMessages.get(username).putFirst(message);
+        MessageSerializer.serialize(message);
         return;
       } catch (InterruptedException e) {}
     }
@@ -203,6 +231,8 @@ public class BusinessLogicServer {
               }
               // mark the user as created but not logged in yet
               messageDistributors.put(username, EMPTY_MESSAGE_DISTRIBUTOR);
+              // record the creation of the user in accounts file
+              AccountSerializer.serialize(username);
               // create a new queue for the user to hold pending messages
               pendingMessages.put(
                   username,
@@ -288,8 +318,9 @@ public class BusinessLogicServer {
               // put the message onto the end of the recipient's queue of pending messages (keep trying until it works)
               while(true) {
                 try {
-                  pendingMessages.get(recipient).put(
-                      new PendingMessage(recipient, this.username, messageText));
+                  PendingMessage temp = new PendingMessage(recipient, this.username, messageText);
+                  pendingMessages.get(recipient).put(temp);
+                  MessageSerializer.serialize(temp);
                   break;
                 } catch (InterruptedException e) {}
               }
@@ -352,8 +383,9 @@ public class BusinessLogicServer {
                 messageDistributors.get(username).get().cease();
               }
               // (2) deleting the user's entry in the messageDistributors 
-              //     map, marking them as deleted
+              //     map, marking them as deleted. do the same for accounts file
               messageDistributors.remove(username);
+              AccountSerializer.serialize(username);
               // (3) deleting the user's pending messages
               pendingMessages.remove(username);
 

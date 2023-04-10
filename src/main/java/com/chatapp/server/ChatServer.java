@@ -4,8 +4,11 @@ import io.grpc.Server;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+import java.util.ArrayList;
 
 import com.chatapp.protocol.Constant;
+import com.chatapp.server.Persistence.AccountSerializer;
+import com.chatapp.server.Persistence.MessageSerializer;
 
 /**
  * Server that manages startup/shutdown of a {@code Chat} server. This class 
@@ -23,8 +26,19 @@ public class ChatServer {
    * @throws IOException
    */
   private void start() throws IOException {
+    // Update accounts file to remove accounts that no longer exist
+    AccountSerializer.updateAccounts();
+
+    // Update messages file to remove messages that were sent to users that no longer exist
+    MessageSerializer.updateMessages();
+
     // Start the business logic portion of the server
     BusinessLogicServer businessLogicServer = new BusinessLogicServer();
+
+    // Load the account information from the files
+    ArrayList<String> pastAccounts = AccountSerializer.deserialize();
+    ArrayList<PendingMessage> pastMessages = MessageSerializer.deserialize();
+    businessLogicServer.loadFiles(pastAccounts, pastMessages);
 
     // Then grab the gRPC server that it creates
     server = businessLogicServer.getServer();
