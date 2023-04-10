@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.ArrayList;
-
-import com.chatapp.protocol.Constant;
 import com.chatapp.server.Persistence.AccountSerializer;
 import com.chatapp.server.Persistence.MessageSerializer;
 
@@ -21,6 +19,15 @@ public class ChatServer {
   // The gRPC server object, to be populated by start()
   private Server server;
 
+  private ReplicaManager replicaManager;
+
+  private int port;
+
+  public ChatServer(ReplicaManager replicaManager, int port) {
+    this.replicaManager = replicaManager;
+    this.port = port;
+  }
+
   /**
    * Start serving requests.
    * @throws IOException
@@ -33,7 +40,7 @@ public class ChatServer {
     MessageSerializer.updateMessages();
 
     // Start the business logic portion of the server
-    BusinessLogicServer businessLogicServer = new BusinessLogicServer();
+    BusinessLogicServer businessLogicServer = new BusinessLogicServer(replicaManager, port);
 
     // Load the account information from the files
     ArrayList<String> pastAccounts = AccountSerializer.deserialize();
@@ -43,7 +50,7 @@ public class ChatServer {
     // Then grab the gRPC server that it creates
     server = businessLogicServer.getServer();
 
-    logger.info("Server started, listening on " + Constant.PORT);
+    logger.info("Server started, listening on " + port);
 
     // Add a shutdown hook to the JVM so that the server can be shut down gracefully
     Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -87,10 +94,21 @@ public class ChatServer {
   }
 
   /**
-   * Main launches the server from the command line.
+   * Main launches the server from the command line. The first argument specifies which replica this is.
    */
   public static void main(String[] args) throws IOException, InterruptedException {
-    final ChatServer server = new ChatServer();
+    // parse the first argument as the replica number
+    int replicaNumber = Integer.parseInt(args[0]);
+    // grab the corresponding replica
+    Replica replica = Replica.REPLICAS[replicaNumber];
+    // start the Bully algorithm for this replica
+    ReplicaManager replicaManager = new Bully(replica);
+    Thread t = new Thread(replicaManager);
+    t.start();
+    // grab the port for this replica's business logic server
+    int port = com.chatapp.protocol.Server.SERVERS[replicaNumber].getPort();
+    // start the business logic server
+    final ChatServer server = new ChatServer(replicaManager, port);
     server.start();
     server.blockUntilShutdown();
   }

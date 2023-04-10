@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package com.chatapp;
+
+import "google/rpc/status.proto";
+
+// A blocking RPC service to support the Bully algorithm
+service BullyService {
+  // Send a ping to a replica
+  rpc Ping(Empty) returns (Empty) {}
+
+  // Declare `Replica` as the new leader
+  rpc DeclareVictory(Replica) returns (Empty) {}
+}
+
+// Represents a replica
+message Replica {
+  int32 id = 1;
+}
+
+// Represents an empty message
+message Empty {}
