@@ -2,6 +2,8 @@ package com.chatapp.server;
 
 import java.util.ArrayList;
 
+import com.chatapp.protocol.Server;
+
 /**
  * Represents a replica, which is a replication of the chat app server. A replica has an ID, an IP address and a port number. This file also lists the replicas. The ID determines the precedence of the replica. The replica with the highest ID is the leader.
  */
@@ -37,6 +39,26 @@ public class Replica {
     new Replica(1, "localhost", 8081),
     new Replica(0, "localhost", 8082)
   };
+
+  /*
+   * Returns the business logic server that corresponds to this replica
+   */
+  public static Server getServer(Replica replica) {
+    // find the index of the replica in the list of replicas
+    int index = -1;
+    for (int i = 0; i < REPLICAS.length; i++) {
+      if (REPLICAS[i].equals(replica)) {
+        index = i;
+        break;
+      }
+    }
+    // if the replica is not in the list, throw an exception
+    if (index == -1) {
+      throw new IllegalArgumentException("Invalid replica");
+    }
+    // return the corresponding server
+    return Server.SERVERS[index];
+  }
 
   /*
    * Returns a list of all the replicas that have a higher ID than the given replica in descending order.

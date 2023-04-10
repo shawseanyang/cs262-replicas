@@ -33,6 +33,13 @@ public class Bully implements ReplicaManager {
   }
 
   /*
+   * Returns the identity of this replica.
+   */
+  public Replica getSelf() {
+    return self;
+  }
+
+  /*
    * Setter for the leader variable. Prints a message to the console to indicate the change.
    */
   public void setLeader(Replica newLeader) {
@@ -133,16 +140,16 @@ public class Bully implements ReplicaManager {
   private Replica electLeader() {
     // Ping all of the replicas with a higher ID than this replica in order of precedence.
     Replica[] higherUps = Replica.getHigherUps(self);
-    System.out.println("My higher ups are " + Replica.getIdsAsString(higherUps) + ".");
+    //System.out.println("My higher ups are " + Replica.getIdsAsString(higherUps) + ".");
     for (Replica higherUp : higherUps) {
       if (isAlive(higherUp)) {
         // the first higher up that is alive is the leader
-        System.out.println("Elected " + higherUp.getId() + " as the new leader.");
+        //System.out.println("Elected " + higherUp.getId() + " as the new leader.");
         return higherUp;
       }
     }
     // if there are no higher ups that are alive, then this replica is the leader
-    System.out.println("Elected myself as the new leader.");
+    //System.out.println("Elected myself as the new leader.");
     return self;
   }
 
@@ -154,10 +161,10 @@ public class Bully implements ReplicaManager {
     try {
       getStubFor(replica).ping(null);
     } catch (StatusRuntimeException e) {
-      System.out.println("Replica " + replica.getId() + " is dead.");
+      // System.out.println("Replica " + replica.getId() + " is dead.");
       return false;
     }
-    System.out.println("Replica " + replica.getId() + " is alive.");
+    // System.out.println("Replica " + replica.getId() + " is alive.");
     return true;
   }
 

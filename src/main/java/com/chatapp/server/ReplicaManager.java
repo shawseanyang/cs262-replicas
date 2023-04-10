@@ -5,6 +5,7 @@ package com.chatapp.server;
  */
 
 public interface ReplicaManager extends Runnable {
+  public Replica getSelf();
   public ReplicaStatus getStatus();
   public Replica getLeader();
   public boolean isLeader();

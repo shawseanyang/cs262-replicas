@@ -12,7 +12,7 @@ public class ServerManager {
 
   public ServerManager() {
     current = Server.SERVERS[index];
-    index += 1;
+    index += 0;
   }
 
   public Server getCurrent() {

@@ -10,10 +10,16 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.chatapp.Chat.ChatMessage;
+import com.chatapp.Chat.PingRequest;
 import com.chatapp.ChatServiceGrpc;
+import com.chatapp.ChatServiceGrpc.ChatServiceStub;
 
+import io.grpc.Context;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import io.grpc.ServerCall;
 import io.grpc.stub.StreamObserver;
 
 /**
@@ -43,16 +49,16 @@ public class BusinessLogicServer {
    */
   private static ConcurrentHashMap<String, BlockingDeque<PendingMessage>> pendingMessages = new ConcurrentHashMap<String, BlockingDeque<PendingMessage>>();
 
-  private static ReplicaManager replicaManager;
+  private static ReplicaManager rm;
 
   /**
    * Constructor
    */
-  public BusinessLogicServer(ReplicaManager r, int port) {
+  public BusinessLogicServer(ReplicaManager myRm, int port) {
     server = ServerBuilder
         .forPort(port)
         .addService(new ChatServiceImpl()).build();
-    replicaManager = r;
+    rm = myRm;
   }
 
   /**
@@ -146,6 +152,11 @@ public class BusinessLogicServer {
          */
         ConcurrentStreamObserver<ChatMessage> cResponseObserver = new ConcurrentStreamObserver<ChatMessage>(responseObserver);
 
+        /*
+         * Leader replicas relay messages from the client to all its followers. A relay group facilitates that.
+         */
+        private RelayGroup relayGroup = null;
+
         /**
          * Logs out the user that this ResponseObserver is responsible for
          * Does not check for invariants that are required for logging out. 
@@ -181,12 +192,32 @@ public class BusinessLogicServer {
          */
         @Override
         public void onNext(ChatMessage message) {
-          // If this replica is currently a follower, then reject the request
-          if (replicaManager.isFollower()) {
-            logger.info("Rejecting request because this replica is a follower");
-            cResponseObserver.onNext(
-                ChatMessageGenerator.REJECTED());
-            return;
+          // If this replica is currently a follower and the client is not a relay from another replica, then reject the request
+          // if (rm.isFollower()) {
+          //   logger.info("Rejecting request because this replica is a follower");
+          //   cResponseObserver.onNext(
+          //       ChatMessageGenerator.REJECTED());
+          //   return;
+          // }
+
+          // If this replica is currently a leader, then forward the message to all the followers
+          if (rm.isLeader()) {
+            System.out.println("Creating relay group");
+            // If needed, create a relay group to all followers
+            if (relayGroup == null) {
+              relayGroup = new RelayGroup(Replica.getOthers(rm.getSelf()));
+            }
+            System.out.println("Relaying messages");
+            // Relay the message to all the followers
+            relayGroup.relay(message);
+          }
+
+          System.out.println("next step");
+
+          // If this replica is no longer a leader and there is still a relay group, then end it
+          if (!rm.isLeader() && relayGroup != null) {
+            relayGroup.end();
+            relayGroup = null;
           }
 
           // If this ResponseObserver is currently responsible for a user, check if the user still exists (in case they got deleted). If deleted, then log them out
@@ -198,6 +229,13 @@ public class BusinessLogicServer {
 
           // handle the message based on what type ("case") it is
           switch (message.getMessageCase()) {
+
+            // ------------------------ PING ----------------------------------
+            case PING_REQUEST: {
+              // log it
+              logger.info("Received ping");
+              return;
+            }
 
             // ------------------------ CREATE ACCOUNT ------------------------
             case CREATE_ACCOUNT_REQUEST: {

@@ -31,10 +31,13 @@ import io.grpc.stub.StreamObserver;
 
 public class ConnectionManager extends Thread {
   
+  // The server manager is used to get the current server and to get the next server in the list
   ServerManager serverManager;
 
+  // The observer is used to send messages to the server
   StreamObserver<ChatMessage> observer;
 
+  // The channel represents the connection to the server and is used to close the connection when the server is changed
   ManagedChannel channel;
 
   // Constructor
