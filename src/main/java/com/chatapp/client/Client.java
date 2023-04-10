@@ -3,17 +3,10 @@ package com.chatapp.client;
 import java.util.Scanner;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-
-import com.chatapp.ChatServiceGrpc;
-import com.chatapp.ChatServiceGrpc.ChatServiceStub;
 import com.chatapp.client.commands.Command;
 import com.chatapp.client.commands.ConnectCommand;
 import com.chatapp.client.commands.EmptyCommand;
 import com.chatapp.client.commands.QuitCommand;
-import com.chatapp.protocol.Server;
-
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 
 // Entry point of the client application. Listens for user commands from the console and adds it to its queue of pending commands. It exposes a method for the ConnectionManager to get the next command from the queue.
 

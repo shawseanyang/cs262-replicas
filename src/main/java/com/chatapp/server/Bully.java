@@ -1,7 +1,5 @@
 package com.chatapp.server;
 
-import java.util.HashMap;
-
 import com.chatapp.BullyServiceGrpc;
 import com.chatapp.Bully.Empty;
 import com.chatapp.BullyServiceGrpc.BullyServiceBlockingStub;
