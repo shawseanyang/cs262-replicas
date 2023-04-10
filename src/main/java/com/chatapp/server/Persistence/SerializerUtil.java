@@ -13,6 +13,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.chatapp.server.BusinessLogicServer;
+
 /*
  * This class is used to serialize and deserialize objects
  */
@@ -60,9 +62,12 @@ public class SerializerUtil {
     public static List<String> read(TextType r) {
         List<String> lines = null;
 
+        String mainFile = BusinessLogicServer.getReplicaFolder() + r.toFile();
+        String backupFile = BusinessLogicServer.getReplicaFolder() + r.toBackupFile();
+
         // Attempt to read from file
         try {
-            lines = Files.readAllLines(Paths.get(r.toFile()));
+            lines = Files.readAllLines(Paths.get(mainFile));
         } catch (IOException e) {
             System.out.println("INFO: " + r + " file is empty");
         }
@@ -70,8 +75,8 @@ public class SerializerUtil {
         // If the file is not corrupted, copy it to the backup file
         if (lines != null && lines.size() > 0) {
           try {
-            FileInputStream src = new FileInputStream(r.toFile());
-            FileOutputStream dest = new FileOutputStream(r.toBackupFile());
+            FileInputStream src = new FileInputStream(mainFile);
+            FileOutputStream dest = new FileOutputStream(backupFile);
             dest.getChannel().transferFrom(src.getChannel(), 0, src.getChannel().size());
             src.close();
             dest.close();
@@ -85,7 +90,7 @@ public class SerializerUtil {
           // Attempt to read from the backup file
           if (lines == null || lines.size() == 0) {
             try {
-              lines = Files.readAllLines(Paths.get(r.toBackupFile()));
+              lines = Files.readAllLines(Paths.get(backupFile));
             } catch (IOException e) {
               System.out.println("INFO: Backup file is empty");
             }
@@ -94,8 +99,8 @@ public class SerializerUtil {
           // If the backup file is not corrupted, copy it to the file
           if (lines != null && lines.size() > 0) {
             try {
-              FileInputStream src = new FileInputStream(r.toBackupFile());
-              FileOutputStream dest = new FileOutputStream(r.toFile());
+              FileInputStream src = new FileInputStream(backupFile);
+              FileOutputStream dest = new FileOutputStream(mainFile);
               dest.getChannel().transferFrom(src.getChannel(), 0, src.getChannel().size());
               src.close();
               dest.close();
@@ -122,8 +127,8 @@ public class SerializerUtil {
         String text = marshallArguments(args);
 
         // Write to both files, one at a time
-        write(text, r.toFile());
-        write(text, r.toBackupFile());
+        write(text, BusinessLogicServer.getReplicaFolder() + r.toFile());
+        write(text, BusinessLogicServer.getReplicaFolder() + r.toBackupFile());
     }
 
     /*

@@ -1,5 +1,6 @@
 package com.chatapp.server.Persistence;
 
+import com.chatapp.server.BusinessLogicServer;
 import com.chatapp.server.PendingMessage;
 import com.chatapp.server.Persistence.SerializerUtil.TextType;
 
@@ -55,7 +56,7 @@ public class MessageSerializer {
         HashSet<String> accounts = new HashSet<String>(pastAccounts);
 
         // Clear the message file at the last possible time
-        SerializerUtil.clear(Constants.MESSAGE_FILE);
+        SerializerUtil.clear(BusinessLogicServer.getReplicaFolder() + Constants.MESSAGE_FILE);
       
         // Only write the past messages to the message file for which both
         // the sender and recipient are still active
@@ -66,7 +67,7 @@ public class MessageSerializer {
         }
 
         // Copy to backup file as soon as possible
-        SerializerUtil.copy(Constants.MESSAGE_FILE, Constants.MESSAGE_BACKUP_FILE);
+        SerializerUtil.copy(BusinessLogicServer.getReplicaFolder() + Constants.MESSAGE_FILE, BusinessLogicServer.getReplicaFolder() + Constants.MESSAGE_BACKUP_FILE);
     }
 
 }

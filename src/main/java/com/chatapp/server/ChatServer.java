@@ -33,14 +33,17 @@ public class ChatServer {
    * @throws IOException
    */
   private void start() throws IOException {
+    // Start the business logic portion of the server
+    BusinessLogicServer businessLogicServer = new BusinessLogicServer(replicaManager, port);
+
+    // Create a folder for the replica
+    new java.io.File(BusinessLogicServer.getReplicaFolder()).mkdirs();
+
     // Update accounts file to remove accounts that no longer exist
     AccountSerializer.updateAccounts();
 
     // Update messages file to remove messages that were sent to users that no longer exist
     MessageSerializer.updateMessages();
-
-    // Start the business logic portion of the server
-    BusinessLogicServer businessLogicServer = new BusinessLogicServer(replicaManager, port);
 
     // Load the account information from the files
     ArrayList<String> pastAccounts = AccountSerializer.deserialize();

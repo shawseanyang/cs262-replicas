@@ -63,6 +63,10 @@ public class BusinessLogicServer {
     rm = myRm;
   }
 
+  public static String getReplicaFolder() {
+    return "Replica " + rm.getSelf().getId() + "/";
+  }
+
   /*
    * Load the accounts and messages from the message file
    * @param pastAccounts the list of accounts to load

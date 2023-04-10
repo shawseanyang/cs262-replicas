@@ -1,5 +1,6 @@
 package com.chatapp.server.Persistence;
 
+import com.chatapp.server.BusinessLogicServer;
 import com.chatapp.server.Persistence.SerializerUtil.TextType;
 
 import java.util.ArrayList;
@@ -83,7 +84,7 @@ public class AccountSerializer {
         }
 
         // Clear the account file at the last possible time
-        SerializerUtil.clear(Constants.ACCOUNT_FILE);
+        SerializerUtil.clear(BusinessLogicServer.getReplicaFolder() + Constants.ACCOUNT_FILE);
 
         // Write the updated accounts to the account file
         for (String account : accounts) {
@@ -95,7 +96,7 @@ public class AccountSerializer {
         }
 
         // Copy the account file to the backup file
-        SerializerUtil.copy(Constants.ACCOUNT_FILE, Constants.ACCOUNT_BACKUP_FILE);
+        SerializerUtil.copy(BusinessLogicServer.getReplicaFolder() + Constants.ACCOUNT_FILE, BusinessLogicServer.getReplicaFolder() + Constants.ACCOUNT_BACKUP_FILE);
     }
 
 }
