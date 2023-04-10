@@ -88,31 +88,6 @@ public class BusinessLogicServer {
     }
   }
 
-  /*
-   * Load the accounts and messages from the message file
-   * @param pastAccounts the list of accounts to load
-   * @param pastMessages the list of messages to load
-   */
-  public void loadFiles(ArrayList<String> pastAccounts, ArrayList<PendingMessage> pastMessages) {
-    // Load the accounts from the account file
-    for (String account : pastAccounts) {
-      // mark the user as created but not logged in yet
-      messageDistributors.put(account, EMPTY_MESSAGE_DISTRIBUTOR);
-      // create a queue for the user
-      pendingMessages.put(account, new LinkedBlockingDeque<PendingMessage>());
-    }
-
-    // Load the messages from the message file
-    for (PendingMessage message : pastMessages) {
-      try {
-        pendingMessages.get(message.getRecipient()).put(message);
-      } catch (InterruptedException e) {
-        System.out.println("ERROR: The message file contains users that do not exist.");
-        e.printStackTrace();
-      }
-    }
-  }
-
   /**
    * Get the gRPC server object
    * @return
