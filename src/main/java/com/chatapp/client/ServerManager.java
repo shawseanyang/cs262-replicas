@@ -8,7 +8,7 @@ import com.chatapp.protocol.Server;
 
 public class ServerManager {
   private Server current;
-  private int index = 0;
+  private int index = 1;
 
   public ServerManager() {
     current = Server.SERVERS[index];

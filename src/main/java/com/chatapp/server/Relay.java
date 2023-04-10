@@ -43,6 +43,8 @@ public class Relay {
    */
   public void relay(ChatMessage message) {
     System.out.println("Relaying message to follower.");
+    // add the isInternal flag to the message's metadata
+    message = message.toBuilder().setMetadata(message.getMetadata().toBuilder().setIsInternal(true).build()).build();
     observer.onNext(message);
   }
 

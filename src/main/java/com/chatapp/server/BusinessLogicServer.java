@@ -10,7 +10,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.chatapp.Chat.ChatMessage;
-import com.chatapp.Chat.PingRequest;
 import com.chatapp.ChatServiceGrpc;
 import com.chatapp.ChatServiceGrpc.ChatServiceStub;
 
@@ -185,6 +184,16 @@ public class BusinessLogicServer {
           logger.info("Logged out " + username);
         }
 
+        /*
+         * Checks whether the message is a relay message from another replica
+         */
+        private boolean isRelay(ChatMessage message) {
+          if (message.hasMetadata()) {
+            return message.getMetadata().getIsInternal();
+          }
+          return false;
+        }
+
         /**
          * The onNext() method is called when a new message is received from 
          * the client, therefore it handles it based on what type of message it 
@@ -193,26 +202,24 @@ public class BusinessLogicServer {
         @Override
         public void onNext(ChatMessage message) {
           // If this replica is currently a follower and the client is not a relay from another replica, then reject the request
-          // if (rm.isFollower()) {
-          //   logger.info("Rejecting request because this replica is a follower");
-          //   cResponseObserver.onNext(
-          //       ChatMessageGenerator.REJECTED());
-          //   return;
-          // }
+          if (rm.isFollower() && !isRelay(message)) {
+            logger.info("Rejecting request because this replica is a follower");
+            cResponseObserver.onNext(
+                ChatMessageGenerator.REJECTED());
+            return;
+          }
 
           // If this replica is currently a leader, then forward the message to all the followers
           if (rm.isLeader()) {
-            System.out.println("Creating relay group");
             // If needed, create a relay group to all followers
             if (relayGroup == null) {
+              logger.info("Creating relay group");
               relayGroup = new RelayGroup(Replica.getOthers(rm.getSelf()));
             }
-            System.out.println("Relaying messages");
+            logger.info("Relaying message");
             // Relay the message to all the followers
             relayGroup.relay(message);
           }
-
-          System.out.println("next step");
 
           // If this replica is no longer a leader and there is still a relay group, then end it
           if (!rm.isLeader() && relayGroup != null) {
@@ -228,18 +235,21 @@ public class BusinessLogicServer {
           }
 
           // handle the message based on what type ("case") it is
-          switch (message.getMessageCase()) {
+          switch (message.getContent().getContentCase()) {
 
             // ------------------------ PING ----------------------------------
-            case PING_REQUEST: {
+            case PING: {
               // log it
-              logger.info("Received ping");
+              logger.info("Received ping, ponging back.");
+              // respond with a pong
+              cResponseObserver.onNext(
+                  ChatMessageGenerator.PONG());
               return;
             }
 
             // ------------------------ CREATE ACCOUNT ------------------------
             case CREATE_ACCOUNT_REQUEST: {
-              String username = message.getCreateAccountRequest().getUsername();
+              String username = message.getContent().getCreateAccountRequest().getUsername();
               // respond with an exception if the username is already taken
               if (messageDistributors.containsKey(username)) {
                 logger.info(
@@ -264,7 +274,7 @@ public class BusinessLogicServer {
 
             // ------------------------ LOG IN ------------------------
             case LOG_IN_REQUEST: {
-              String username = message.getLogInRequest().getUsername();
+              String username = message.getContent().getLogInRequest().getUsername();
               // respond with an exception if the username does not exist
               if (!messageDistributors.containsKey(username)) {
                 logger.info(
@@ -312,8 +322,8 @@ public class BusinessLogicServer {
 
             // ------------------------ SEND MESSAGE ------------------------
             case SEND_MESSAGE_REQUEST: {
-              String recipient = message.getSendMessageRequest().getRecipient();
-              String messageText = message.getSendMessageRequest().getMessage();
+              String recipient = message.getContent().getSendMessageRequest().getRecipient();
+              String messageText = message.getContent().getSendMessageRequest().getMessage();
 
               // respond with an exception if the client represented by this ResponseObserver is not logged in
               if (this.username == null) {
@@ -353,7 +363,7 @@ public class BusinessLogicServer {
 
             // ------------------------ LIST ACCOUNTS ------------------------
             case LIST_ACCOUNTS_REQUEST: {
-              String regexString = message.getListAccountsRequest().getPattern();
+              String regexString = message.getContent().getListAccountsRequest().getPattern();
 
               // Make * match any number of characters
               regexString = regexString.replaceAll("\\*", ".*");
@@ -382,7 +392,7 @@ public class BusinessLogicServer {
 
             // ------------------------ DELETE ACCOUNT ------------------------
             case DELETE_ACCOUNT_REQUEST: {
-              String username = message.getDeleteAccountRequest().getUsername();
+              String username = message.getContent().getDeleteAccountRequest().getUsername();
 
               // respond with an exception if the account does not exist
               if (!messageDistributors.containsKey(username)) {

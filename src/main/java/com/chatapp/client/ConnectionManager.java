@@ -2,12 +2,13 @@ package com.chatapp.client;
 
 import com.chatapp.ChatServiceGrpc;
 import com.chatapp.Chat.ChatMessage;
+import com.chatapp.Chat.Content;
 import com.chatapp.Chat.CreateAccountRequest;
 import com.chatapp.Chat.DeleteAccountRequest;
 import com.chatapp.Chat.ListAccountsRequest;
 import com.chatapp.Chat.LogInRequest;
 import com.chatapp.Chat.LogOutRequest;
-import com.chatapp.Chat.PingRequest;
+import com.chatapp.Chat.Ping;
 import com.chatapp.Chat.SendMessageRequest;
 import com.chatapp.ChatServiceGrpc.ChatServiceStub;
 import com.chatapp.client.commands.Command;
@@ -45,7 +46,7 @@ public class ConnectionManager extends Thread {
     serverManager = new ServerManager();
     observer = createObserverFor(serverManager.getCurrent());
     // try sending a ping to the server to see if it is alive
-    observer.onNext(ChatMessage.newBuilder().setPingRequest(PingRequest.newBuilder().build()).build());
+    observer.onNext(ChatMessage.newBuilder().setContent(Content.newBuilder().setPing(Ping.newBuilder().build()).build()).build());
   }
 
   private StreamObserver<ChatMessage> createObserverFor(Server server) {
@@ -70,35 +71,42 @@ public class ConnectionManager extends Thread {
 
           observer = createObserverFor(serverManager.getNext());
 
-          System.out.println("-> Reconnected to server " + serverManager.getCurrent().toString() + ".");
+          // Send a ping to make sure the server is alive
+          observer.onNext(ChatMessage.newBuilder().setContent(Content.newBuilder().setPing(Ping.newBuilder().build()).build()).build());
         }
 
         // this callback is called when the server sends a message to the client
         @Override
         public void onNext(ChatMessage message) {
           // if the request was rejected because the server was a follower, then print a message to the user
-          if (message.hasRejectedByFollower()) {
+          if (message.getContent().hasRejectedByFollower()) {
             System.out.println("-> The server is a follower, reconnecting to another server.");
             reconnectToNextServer();
             return;
           }
 
+          // if the message is a ping response, then tell the user
+          if (message.getContent().hasPong()) {
+            System.out.println("-> Connected to server " + serverManager.getCurrent().toString());
+            return;
+          }
+
           // if the message is a message distribution, print the message for the user to see
-          if (message.hasDistributeMessageRequest()) {
+          if (message.getContent().hasDistributeMessageRequest()) {
             // use printf
             System.out.printf(
               "[%s]: %s\n",
-              message.getDistributeMessageRequest().getSender(),
-              message.getDistributeMessageRequest().getMessage()
+              message.getContent().getDistributeMessageRequest().getSender(),
+              message.getContent().getDistributeMessageRequest().getMessage()
             );
             return;
           }
 
           // if the message is a listing of accounts, then print the accounts for the user to see. Use a StringBuilder so that it can be printed all at once to avoid being interrupted by some other print statement
-          if (message.hasListAccountsResponse()) {
+          if (message.getContent().hasListAccountsResponse()) {
             StringBuilder sb = new StringBuilder();
             sb.append("*** Accounts ***\n");
-            for (String account : message.getListAccountsResponse().getAccountsList()) {
+            for (String account : message.getContent().getListAccountsResponse().getAccountsList()) {
               sb.append(account + "\n");
             }
             sb.append("****************");
@@ -156,10 +164,13 @@ public class ConnectionManager extends Thread {
         if (command instanceof CreateAccountCommand) {
           CreateAccountCommand cast = (CreateAccountCommand) command;
           ChatMessage message = ChatMessage.newBuilder()
-            .setCreateAccountRequest(
-              CreateAccountRequest.newBuilder()
-                .setUsername(cast.getUsername())
-                .build()
+            .setContent(
+              Content.newBuilder()
+                .setCreateAccountRequest(
+                  CreateAccountRequest.newBuilder()
+                    .setUsername(cast.getUsername())
+                    .build()
+                ).build()
             ).build();
             observer.onNext(message);
         }
@@ -168,10 +179,13 @@ public class ConnectionManager extends Thread {
         else if (command instanceof DeleteAccountCommand) {
           DeleteAccountCommand cast = (DeleteAccountCommand) command;
           ChatMessage message = ChatMessage.newBuilder()
-            .setDeleteAccountRequest(
-              DeleteAccountRequest.newBuilder()
-                .setUsername(cast.getUsername())
-                .build()
+            .setContent(
+              Content.newBuilder()
+                .setDeleteAccountRequest(
+                  DeleteAccountRequest.newBuilder()
+                    .setUsername(cast.getUsername())
+                    .build()
+                ).build()
             ).build();
             observer.onNext(message);
         }
@@ -180,10 +194,13 @@ public class ConnectionManager extends Thread {
         else if (command instanceof ListAccountsCommand) {
           ListAccountsCommand cast = (ListAccountsCommand) command;
           ChatMessage message = ChatMessage.newBuilder()
-            .setListAccountsRequest(
-              ListAccountsRequest.newBuilder()
-                .setPattern(cast.getPattern())
-                .build()
+            .setContent(
+              Content.newBuilder()
+                .setListAccountsRequest(
+                  ListAccountsRequest.newBuilder()
+                    .setPattern(cast.getPattern())
+                    .build()
+                ).build()
             ).build();
             observer.onNext(message);
         }
@@ -192,10 +209,13 @@ public class ConnectionManager extends Thread {
         else if (command instanceof LogInCommand) {
           LogInCommand cast = (LogInCommand) command;
           ChatMessage message = ChatMessage.newBuilder()
-            .setLogInRequest(
-              LogInRequest.newBuilder()
-                .setUsername(cast.getUsername())
-                .build()
+            .setContent(
+              Content.newBuilder()
+              .setLogInRequest(
+                    LogInRequest.newBuilder()
+                      .setUsername(cast.getUsername())
+                      .build()
+                  ).build()
             ).build();
             observer.onNext(message);
         }
@@ -203,19 +223,29 @@ public class ConnectionManager extends Thread {
         // ------------------ LOG OUT ------------------
         else if (command instanceof LogOutCommand) {
           // create a LogOutResponse, which contains nothing
-          ChatMessage message = ChatMessage.newBuilder().setLogOutRequest(LogOutRequest.newBuilder().build()).build();
-          observer.onNext(message);
+          ChatMessage message = ChatMessage.newBuilder()
+            .setContent(
+              Content.newBuilder()
+                .setLogOutRequest(
+                  LogOutRequest.newBuilder()
+                    .build()
+                ).build()
+            ).build();
+            observer.onNext(message);
         }
 
         // ------------------ SEND MESSAGE ------------------
         else if (command instanceof SendMessageCommand) {
           SendMessageCommand cast = (SendMessageCommand) command;
           ChatMessage message = ChatMessage.newBuilder()
-            .setSendMessageRequest(
-              SendMessageRequest.newBuilder()
-                .setRecipient(cast.getRecipient())
-                .setMessage(cast.getMessage())
-                .build()
+            .setContent(
+              Content.newBuilder()
+                .setSendMessageRequest(
+                  SendMessageRequest.newBuilder()
+                    .setRecipient(cast.getRecipient())
+                    .setMessage(cast.getMessage())
+                    .build()
+                ).build()
             ).build();
             observer.onNext(message);
         }
@@ -234,16 +264,17 @@ public class ConnectionManager extends Thread {
   private Status extractStatus(ChatMessage message) {
     Status status;
     // go through all the message types, setting status to the status of the message if its not null -- since ChatMessage is a oneof, only one of these will be non-null and thus set
-    if (message.hasCreateAccountResponse()) {
-      status = message.getCreateAccountResponse().getStatus();
-    } else if (message.hasLogInResponse()) {
-      status = message.getLogInResponse().getStatus();
-    } else if (message.hasLogOutResponse()) {
-      status = message.getLogOutResponse().getStatus();
-    } else if (message.hasSendMessageResponse()) {
-      status = message.getSendMessageResponse().getStatus();
-    } else if (message.hasDeleteAccountResponse()) {
-      status = message.getDeleteAccountResponse().getStatus();
+    Content c = message.getContent();
+    if (c.hasCreateAccountResponse()) {
+      status = c.getCreateAccountResponse().getStatus();
+    } else if (c.hasLogInResponse()) {
+      status = c.getLogInResponse().getStatus();
+    } else if (c.hasLogOutResponse()) {
+      status = c.getLogOutResponse().getStatus();
+    } else if (c.hasSendMessageResponse()) {
+      status = c.getSendMessageResponse().getStatus();
+    } else if (c.hasDeleteAccountResponse()) {
+      status = c.getDeleteAccountResponse().getStatus();
     } else {
       status = null;
     }
