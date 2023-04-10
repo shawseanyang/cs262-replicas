@@ -1,4 +1,4 @@
-# cs262-chat-app
+# cs262-replicas
 
 ## Getting started
 1. Install Maven, one of the Java build systems. On Mac, use homebrew: `brew install maven`.
@@ -10,7 +10,9 @@
 
 ## Running
 
-Server: run `mvn exec:java -Dexec.mainClass="com.chatapp.server.ChatServer"`
+Server: run `mvn exec:java -Dexec.mainClass="com.chatapp.server.ChatServer" -Dexec.args="<Replica_Number>"`
+
+> Replica numbers are 0, 1, and 2. Each replica (server instance) must be run with a unique replica number. You may run up to three server instances.
 
 Client: run `mvn exec:java -Dexec.mainClass="com.chatapp.client.Client"`
 
@@ -66,7 +68,7 @@ send andy Wow I'm surprised that worked!
 
 # Documentation
 ## Engineering Notebook
-The engineering notebook can be found [here](https://docs.google.com/document/d/1cd2ADotJJuukOL3ebo9es9_DIUSupXIdjXFgi5i30cU/edit?usp=sharing).
+The engineering notebook can be found [here](https://docs.google.com/document/d/1TJoK3nFk3zBbZu7xBN-lICsxIV1tWJR6azA77zb5HfM/edit?usp=sharing).
 ## Protocol
 ### Bidirectional stream
 The chat app is a client-server system that uses a bidirectional gRPC stream to send messages between the client and server. The bidirectional stream sends and recieves protocol buffers of type `Message`. `Message` uses the `oneof` keyword to allow for different types of messages to be sent over the same stream while still allowing gRPC to compress the actual data into small packages.
